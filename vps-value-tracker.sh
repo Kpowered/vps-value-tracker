@@ -15,17 +15,6 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 确保可以读取用户输入
-if [ -t 0 ]; then
-    # 直接运行脚本
-    INTERACTIVE=true
-else
-    # 通过管道运行
-    INTERACTIVE=true  # 仍然设置为 true，因为我们会使用 /dev/tty
-    # 重新连接到终端
-    exec 0</dev/tty
-fi
-
 # 检查并安装必要的命令
 echo "正在安装必要的包..."
 apt-get update
@@ -70,30 +59,23 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}Docker镜像构建成功${NC}"
 
-# 询问是否配置域名
-while true; do
-    echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
-    read -r setup_domain
-    
-    case $setup_domain in
-        [Yy]* )
-            echo -e "\n${GREEN}请输入域名：${NC}"
-            read -r domain_name
-            if [ -n "$domain_name" ]; then
-                break
-            else
-                echo -e "${RED}域名不能为空，请重新输入${NC}"
-            fi
-            ;;
-        [Nn]* | "" )
-            domain_name=""
-            break
-            ;;
-        * )
-            echo -e "${RED}请输入 y 或 n${NC}"
-            ;;
-    esac
-done
+# 创建临时脚本来处理域名配置
+TMP_SCRIPT=$(mktemp)
+cat > "$TMP_SCRIPT" << 'EOF'
+#!/bin/bash
+read -p "是否要配置域名？[y/N] " setup_domain
+if [[ $setup_domain =~ ^[Yy]$ ]]; then
+    read -p "请输入域名：" domain_name
+    echo "$domain_name"
+else
+    echo ""
+fi
+EOF
+chmod +x "$TMP_SCRIPT"
+
+# 获取域名配置
+domain_name=$(bash "$TMP_SCRIPT")
+rm -f "$TMP_SCRIPT"
 
 if [ -n "$domain_name" ]; then
     # 安装certbot
@@ -136,15 +118,6 @@ docker run -d \
 # 检查容器是否成功启动
 if [ $? -ne 0 ]; then
     echo -e "${RED}容器启动失败${NC}"
-    echo "查看Docker日志以获取更多信息："
-    docker logs vps-value-tracker
-    exit 1
-fi
-
-# 等待几秒钟确保容器正常运行
-sleep 5
-if ! docker ps | grep -q vps-value-tracker; then
-    echo -e "${RED}容器启动后未能保持运行${NC}"
     echo "查看Docker日志以获取更多信息："
     docker logs vps-value-tracker
     exit 1
