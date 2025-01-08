@@ -18,6 +18,9 @@ async function init() {
     // 检查是否需要设置初始密码
     if (!isPasswordSet()) {
         showSetPasswordForm();
+    } else {
+        // 确保登录表单处于正确状态
+        resetLoginForm();
     }
 }
 
@@ -141,7 +144,12 @@ function renderVpsList() {
 function setupEventListeners() {
     // 登录按钮
     document.getElementById('loginBtn').addEventListener('click', () => {
-        document.getElementById('loginForm').classList.remove('hidden');
+        if (!isPasswordSet()) {
+            showSetPasswordForm();
+        } else {
+            resetLoginForm();
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
     });
 
     // 添加VPS按钮
@@ -247,7 +255,33 @@ function setInitialPassword() {
     
     localStorage.setItem(CONFIG.PASSWORD_KEY, newPassword);
     document.getElementById('loginForm').classList.add('hidden');
+    
+    // 更新登录表单状态
+    resetLoginForm();
+    
     alert('密码设置成功！');
+}
+
+// 添加重置登录表单函数
+function resetLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    loginForm.innerHTML = `
+        <div class="modal-content">
+            <button type="button" class="modal-close" onclick="closeLoginForm()">×</button>
+            <h2>登录</h2>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="请输入密码">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="login()">确认</button>
+            </div>
+        </div>
+    `;
+}
+
+// 添加关闭登录表单函数
+function closeLoginForm() {
+    document.getElementById('loginForm').classList.add('hidden');
 }
 
 // 添加删除VPS函数
