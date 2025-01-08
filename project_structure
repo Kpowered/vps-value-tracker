@@ -8,5 +8,5 @@ vps-value-tracker/
 │   ├── nginx.conf
 ├── deploy/
 │   ├── install.sh
-│   └── nginx-template.conf
+│   ├── test.sh
 └── README.md 

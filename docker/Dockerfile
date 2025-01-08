@@ -3,9 +3,9 @@ FROM nginx:alpine
 # 创建必要的目录
 RUN mkdir -p /usr/share/nginx/html
 
-# 复制项目文件
-COPY ./src/ /usr/share/nginx/html/
-COPY ./docker/nginx.conf /etc/nginx/conf.d/default.conf
+# 复制项目文件（修改路径以确保正确复制）
+COPY src/* /usr/share/nginx/html/
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 # 设置权限
 RUN chown -R nginx:nginx /usr/share/nginx/html

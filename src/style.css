@@ -96,4 +96,38 @@ input, select {
     font-weight: bold;
     font-size: 1.2em;
     margin-top: 10px;
+}
+
+.vps-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.delete-btn {
+    padding: 4px 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: inline-block;
+    width: 100px;
+    margin-right: 10px;
+}
+
+.form-group input[type="date"] {
+    width: 200px;
 } 

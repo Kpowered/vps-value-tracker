@@ -1,6 +1,6 @@
 // 配置
 const CONFIG = {
-    ADMIN_PASSWORD: 'admin123', // 实际使用时请修改
+    PASSWORD_KEY: 'admin_password',
     FIXER_API_KEY: 'e65a0dbfc190ce964f2771bca5c08e13',
     STORAGE_KEY: 'vps_data'
 };
@@ -13,6 +13,11 @@ async function init() {
     await loadExchangeRates();
     renderVpsList();
     setupEventListeners();
+    
+    // 检查是否需要设置初始密码
+    if (!isPasswordSet()) {
+        showSetPasswordForm();
+    }
 }
 
 // 加载汇率数据
@@ -27,7 +32,7 @@ async function loadExchangeRates() {
     }
 
     try {
-        const response = await fetch(`http://data.fixer.io/api/latest?access_key=${CONFIG.FIXER_API_KEY}&base=EUR`);
+        const response = await fetch(`https://data.fixer.io/api/latest?access_key=${CONFIG.FIXER_API_KEY}&base=EUR`);
         const data = await response.json();
         
         if (data.success) {
@@ -71,17 +76,22 @@ function calculateRemainingValue(vps) {
 function renderVpsList() {
     const vpsList = document.getElementById('vpsList');
     const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+    const isAdmin = document.getElementById('adminPanel').classList.contains('hidden') === false;
     
-    vpsList.innerHTML = vpsData.map(vps => {
+    vpsList.innerHTML = vpsData.map((vps, index) => {
         const remainingValue = calculateRemainingValue(vps);
         return `
             <div class="vps-card">
-                <h3>${vps.provider}</h3>
+                <div class="vps-card-header">
+                    <h3>${vps.provider}</h3>
+                    ${isAdmin ? `<button class="delete-btn" onclick="deleteVps(${index})">删除</button>` : ''}
+                </div>
                 <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel}</p>
                 <p>内存: ${vps.ramSize}GB ${vps.ramModel}</p>
                 <p>硬盘: ${vps.diskSize}GB ${vps.diskModel}</p>
                 <p>流量: ${vps.bandwidth}${vps.bandwidthUnit}</p>
                 <p>价格: ${vps.price} ${vps.currency}</p>
+                <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString()}</p>
                 <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString()}</p>
                 <div class="remaining-value">
                     剩余价值: ${remainingValue.original.toFixed(2)} ${vps.currency}
@@ -108,6 +118,8 @@ function setupEventListeners() {
         const nextYear = new Date();
         nextYear.setFullYear(today.getFullYear() + 1);
         
+        document.querySelector('input[name="purchaseDate"]').value = 
+            today.toISOString().split('T')[0];
         document.querySelector('input[name="expiryDate"]').value = 
             nextYear.toISOString().split('T')[0];
     });
@@ -128,6 +140,7 @@ function setupEventListeners() {
             bandwidthUnit: formData.get('bandwidthUnit'),
             price: parseFloat(formData.get('price')),
             currency: formData.get('currency'),
+            purchaseDate: formData.get('purchaseDate'),
             expiryDate: formData.get('expiryDate'),
             addedDate: new Date().toISOString()
         };
@@ -144,7 +157,9 @@ function setupEventListeners() {
 // 登录功能
 function login() {
     const password = document.getElementById('password').value;
-    if (password === CONFIG.ADMIN_PASSWORD) {
+    const storedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    
+    if (password === storedPassword) {
         document.getElementById('loginForm').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
         document.getElementById('loginBtn').classList.add('hidden');
@@ -157,6 +172,57 @@ function login() {
 function closeAddVpsForm() {
     document.getElementById('addVpsForm').classList.add('hidden');
     document.getElementById('vpsForm').reset();
+}
+
+// 添加密码检查函数
+function isPasswordSet() {
+    return localStorage.getItem(CONFIG.PASSWORD_KEY) !== null;
+}
+
+// 添加密码设置表单函数
+function showSetPasswordForm() {
+    const loginForm = document.getElementById('loginForm');
+    loginForm.classList.remove('hidden');
+    loginForm.innerHTML = `
+        <div class="modal-content">
+            <h2>设置管理密码</h2>
+            <div class="form-group">
+                <input type="password" id="newPassword" placeholder="请输入密码" required>
+                <input type="password" id="confirmPassword" placeholder="请确认密码" required>
+            </div>
+            <button onclick="setInitialPassword()">确认</button>
+        </div>
+    `;
+}
+
+// 添加密码设置函数
+function setInitialPassword() {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!newPassword || newPassword.length < 6) {
+        alert('密码长度至少需要6位！');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('两次输入的密码不一致！');
+        return;
+    }
+    
+    localStorage.setItem(CONFIG.PASSWORD_KEY, newPassword);
+    document.getElementById('loginForm').classList.add('hidden');
+    alert('密码设置成功！');
+}
+
+// 添加删除VPS函数
+function deleteVps(index) {
+    if (confirm('确定要删除这个VPS吗？')) {
+        const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+        vpsData.splice(index, 1);
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(vpsData));
+        renderVpsList();
+    }
 }
 
 // 启动应用
