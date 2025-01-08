@@ -45,12 +45,42 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 创建并执行一个临时脚本来继续安装
-echo -e "${GREEN}开始安装...${NC}"
+# 创建交互式安装脚本
 TMP_SCRIPT=$(mktemp)
 cat > "$TMP_SCRIPT" << 'EOF'
 #!/bin/bash
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+# 询问是否继续安装
+echo -e "\n${GREEN}是否现在开始安装？[Y/n]${NC}"
+read -r install_now
+if [[ $install_now =~ ^[Nn]$ ]]; then
+    echo -e "\n您可以稍后运行以下命令完成安装："
+    echo "cd /opt/vps-value-tracker"
+    echo "./deploy/install.sh"
+    exit 0
+fi
+
+# 询问是否配置域名
+echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
+read -r setup_domain
+if [[ $setup_domain =~ ^[Yy]$ ]]; then
+    echo -e "\n${GREEN}请输入域名：${NC}"
+    read -r domain_name
+    export SETUP_DOMAIN="yes"
+    export DOMAIN_NAME="$domain_name"
+else
+    export SETUP_DOMAIN="no"
+fi
+
+# 执行安装脚本
 cd /opt/vps-value-tracker && ./deploy/install.sh
+
+# 清理临时脚本
 rm -f "$0"
 EOF
 
