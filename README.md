@@ -7,13 +7,13 @@
 使用以下命令一键安装：
 
 ```bash
-wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh -O install.sh && chmod +x install.sh && sudo ./install.sh
+curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
 ```
 
 或者：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
 ```
 
 安装过程中可以：
