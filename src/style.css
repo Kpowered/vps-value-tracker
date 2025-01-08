@@ -68,14 +68,56 @@ header {
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
 }
 
-input, select {
-    padding: 8px;
-    margin: 5px;
-    border: 1px solid #ddd;
+.form-group label {
+    width: 100px;
+    margin-right: 10px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+}
+
+.input-group input,
+.input-group select {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
     border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
 }
 
 .vps-card {
@@ -84,6 +126,8 @@ input, select {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    padding-right: 40px;
 }
 
 .vps-card h3 {
@@ -106,6 +150,9 @@ input, select {
 }
 
 .delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     padding: 4px 8px;
     background-color: #dc3545;
     color: white;
@@ -130,4 +177,10 @@ input, select {
 
 .form-group input[type="date"] {
     width: 200px;
+}
+
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 30px;
 } 

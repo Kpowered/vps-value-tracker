@@ -27,46 +27,59 @@
                 <div class="modal-content">
                     <h2>添加 VPS</h2>
                     <form id="vpsForm">
-                        <input type="text" name="provider" placeholder="商家名称" required>
-                        
+                        <div class="form-group">
+                            <label>商家名称:</label>
+                            <input type="text" name="provider" placeholder="商家名称" required>
+                        </div>
+
                         <div class="form-group">
                             <label>CPU:</label>
-                            <input type="number" name="cpuCores" placeholder="核心数量" required>
-                            <input type="text" name="cpuModel" placeholder="CPU型号">
+                            <div class="input-group">
+                                <input type="number" name="cpuCores" placeholder="核心数量" required>
+                                <input type="text" name="cpuModel" placeholder="CPU型号">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label>内存:</label>
-                            <input type="number" name="ramSize" placeholder="大小(GB)" required>
-                            <input type="text" name="ramModel" placeholder="内存型号">
+                            <div class="input-group">
+                                <input type="number" name="ramSize" placeholder="大小(GB)" required>
+                                <input type="text" name="ramModel" placeholder="内存型号">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label>硬盘:</label>
-                            <input type="number" name="diskSize" placeholder="大小(GB)" required>
-                            <input type="text" name="diskModel" placeholder="硬盘型号">
+                            <div class="input-group">
+                                <input type="number" name="diskSize" placeholder="大小(GB)" required>
+                                <input type="text" name="diskModel" placeholder="硬盘型号">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label>流量:</label>
-                            <input type="number" name="bandwidth" placeholder="大小" required>
-                            <select name="bandwidthUnit">
-                                <option value="GB">GB</option>
-                                <option value="TB">TB</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="number" name="bandwidth" placeholder="大小" required>
+                                <select name="bandwidthUnit">
+                                    <option value="GB">GB</option>
+                                    <option value="TB">TB</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label>价格:</label>
-                            <input type="number" name="price" step="0.01" required>
-                            <select name="currency">
-                                <option value="CNY">人民币</option>
-                                <option value="USD">美元</option>
-                                <option value="EUR">欧元</option>
-                                <option value="GBP">英镑</option>
-                                <option value="CAD">加元</option>
-                                <option value="JPY">日元</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="number" name="price" step="0.01" required>
+                                <select name="currency">
+                                    <option value="CNY">人民币</option>
+                                    <option value="USD">美元</option>
+                                    <option value="EUR">欧元</option>
+                                    <option value="GBP">英镑</option>
+                                    <option value="CAD">加元</option>
+                                    <option value="JPY">日元</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -79,8 +92,10 @@
                             <input type="date" name="expiryDate" required>
                         </div>
 
-                        <button type="submit">保存</button>
-                        <button type="button" onclick="closeAddVpsForm()">取消</button>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">保存</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeAddVpsForm()">取消</button>
+                        </div>
                     </form>
                 </div>
             </div>

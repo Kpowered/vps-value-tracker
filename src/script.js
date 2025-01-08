@@ -82,20 +82,24 @@ function renderVpsList() {
         const remainingValue = calculateRemainingValue(vps);
         return `
             <div class="vps-card">
-                <div class="vps-card-header">
-                    <h3>${vps.provider}</h3>
-                    ${isAdmin ? `<button class="delete-btn" onclick="deleteVps(${index})">删除</button>` : ''}
-                </div>
-                <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel}</p>
-                <p>内存: ${vps.ramSize}GB ${vps.ramModel}</p>
-                <p>硬盘: ${vps.diskSize}GB ${vps.diskModel}</p>
-                <p>流量: ${vps.bandwidth}${vps.bandwidthUnit}</p>
-                <p>价格: ${vps.price} ${vps.currency}</p>
-                <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString()}</p>
-                <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString()}</p>
-                <div class="remaining-value">
-                    剩余价值: ${remainingValue.original.toFixed(2)} ${vps.currency}
-                    (￥${remainingValue.cny.toFixed(2)})
+                ${isAdmin ? `
+                    <button class="delete-btn" onclick="deleteVps(${index})" title="删除">
+                        ×
+                    </button>
+                ` : ''}
+                <h3>${vps.provider}</h3>
+                <div class="vps-info">
+                    <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel}</p>
+                    <p>内存: ${vps.ramSize}GB ${vps.ramModel}</p>
+                    <p>硬盘: ${vps.diskSize}GB ${vps.diskModel}</p>
+                    <p>流量: ${vps.bandwidth}${vps.bandwidthUnit}</p>
+                    <p>价格: ${vps.price} ${vps.currency}</p>
+                    <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString()}</p>
+                    <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString()}</p>
+                    <div class="remaining-value">
+                        剩余价值: ${remainingValue.original.toFixed(2)} ${vps.currency}
+                        (￥${remainingValue.cny.toFixed(2)})
+                    </div>
                 </div>
             </div>
         `;
@@ -217,7 +221,7 @@ function setInitialPassword() {
 
 // 添加删除VPS函数
 function deleteVps(index) {
-    if (confirm('确定要删除这个VPS吗？')) {
+    if (confirm('确定要删除这个VPS吗？此操作不可撤销。')) {
         const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
         vpsData.splice(index, 1);
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(vpsData));
