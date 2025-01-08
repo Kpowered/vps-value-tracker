@@ -299,6 +299,7 @@ function addExportButton() {
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-primary" onclick="copyToClipboard(this)">复制到剪贴板</button>
+                    <button class="btn btn-secondary" onclick="downloadMarkdown()">下载文件</button>
                 </div>
             </div>
         `;
@@ -312,16 +313,48 @@ function copyToClipboard(button) {
     const pre = button.parentElement.previousElementSibling.querySelector('pre');
     const text = pre.textContent;
     
-    navigator.clipboard.writeText(text).then(() => {
+    // 创建临时文本区域
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    
+    try {
+        // 选择文本
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // 对于移动设备
+        
+        // 执行复制命令
+        document.execCommand('copy');
+        
+        // 提示成功
         const originalText = button.textContent;
         button.textContent = '已复制！';
         setTimeout(() => {
             button.textContent = originalText;
         }, 2000);
-    }).catch(err => {
+    } catch (err) {
         console.error('复制失败:', err);
         alert('复制失败，请手动复制');
-    });
+    } finally {
+        // 清理临时元素
+        document.body.removeChild(textarea);
+    }
+}
+
+// 添加下载功能
+function downloadMarkdown() {
+    const markdown = exportToMarkdown();
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vps-list-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 }
 
 // 启动应用

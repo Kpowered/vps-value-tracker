@@ -101,9 +101,13 @@ header {
 
 .form-actions {
     display: flex;
-    justify-content: center;
     gap: 10px;
+    justify-content: center;
     margin-top: 20px;
+}
+
+.form-actions .btn {
+    min-width: 120px;
 }
 
 .btn {
@@ -298,6 +302,7 @@ header {
     max-height: 400px;
     overflow-x: auto;
     overflow-y: auto;
+    border: 1px solid #dee2e6;
 }
 
 .markdown-container pre {
@@ -307,6 +312,7 @@ header {
     font-family: monospace;
     font-size: 14px;
     line-height: 1.5;
+    padding: 10px;
 }
 
 /* 添加滚动条样式 */
@@ -426,4 +432,24 @@ header {
         width: calc(100% + 40px);
         border-radius: 0;
     }
+}
+
+/* 添加复制成功动画 */
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.copy-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    animation: fadeInOut 2s ease-in-out;
+    z-index: 2000;
 } 
