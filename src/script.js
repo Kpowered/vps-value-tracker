@@ -2,8 +2,7 @@
 const CONFIG = {
     PASSWORD_KEY: 'admin_password',
     LOGIN_STATE_KEY: 'is_logged_in',
-    STORAGE_KEY: 'vps_data',
-    FIXER_API_KEY: 'e65a0dbfc190ce964f2771bca5c08e13'
+    STORAGE_KEY: 'vps_data'
 };
 
 // 汇率数据
@@ -13,16 +12,17 @@ let exchangeRates = null;
 async function init() {
     await loadExchangeRates();
     setupEventListeners();
-    checkAndRestoreLoginState();
+    initializeLoginState();
 }
 
-// 检查并恢复登录状态
-function checkAndRestoreLoginState() {
-    const hasPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+// 初始化登录状态
+function initializeLoginState() {
+    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
     const isLoggedIn = localStorage.getItem(CONFIG.LOGIN_STATE_KEY) === 'true';
-    
-    if (!hasPassword) {
-        setupInitialPassword();
+
+    if (!savedPassword) {
+        // 首次使用，显示密码设置界面
+        handleFirstTimeSetup();
     } else if (isLoggedIn) {
         showLoggedInUI();
     } else {
@@ -30,22 +30,23 @@ function checkAndRestoreLoginState() {
     }
 }
 
-// 设置初始密码
-function setupInitialPassword() {
-    const password = prompt('首次使用，请设置管理密码（至少6位）：');
+// 处理首次设置
+function handleFirstTimeSetup() {
+    const password = prompt('请设置管理密码（至少6位）：');
     if (!password) {
         showLoggedOutUI();
         return;
     }
-    
+
     if (password.length < 6) {
         alert('密码长度不能少于6位！');
-        setupInitialPassword();
+        handleFirstTimeSetup();
         return;
     }
-    
+
+    // 保存密码并登录
     localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-    setLoginState(true);
+    localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
     showLoggedInUI();
 }
 
@@ -54,33 +55,24 @@ function handleLogin() {
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
     
     if (!savedPassword) {
-        setupInitialPassword();
+        handleFirstTimeSetup();
         return;
     }
-    
+
     const password = prompt('请输入管理密码：');
     if (!password) return;
-    
+
     if (password === savedPassword) {
-        setLoginState(true);
+        localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
         showLoggedInUI();
     } else {
         alert('密码错误！');
     }
 }
 
-// 设置登录状态
-function setLoginState(isLoggedIn) {
-    if (isLoggedIn) {
-        localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
-    } else {
-        localStorage.removeItem(CONFIG.LOGIN_STATE_KEY);
-    }
-}
-
 // 处理登出
 function handleLogout() {
-    setLoginState(false);
+    localStorage.removeItem(CONFIG.LOGIN_STATE_KEY);
     showLoggedOutUI();
 }
 
