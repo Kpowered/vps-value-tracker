@@ -15,6 +15,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 确保可以读取用户输入
+exec < /dev/tty
+
 # 检查并安装必要的命令
 echo "正在安装必要的包..."
 apt-get update
@@ -60,13 +63,31 @@ fi
 echo -e "${GREEN}Docker镜像构建成功${NC}"
 
 # 询问是否配置域名
-echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
-read -r setup_domain
+while true; do
+    echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
+    read -r setup_domain
+    
+    case $setup_domain in
+        [Yy]* )
+            echo -e "\n${GREEN}请输入域名：${NC}"
+            read -r domain_name
+            if [ -n "$domain_name" ]; then
+                break
+            else
+                echo -e "${RED}域名不能为空，请重新输入${NC}"
+            fi
+            ;;
+        [Nn]* | "" )
+            domain_name=""
+            break
+            ;;
+        * )
+            echo -e "${RED}请输入 y 或 n${NC}"
+            ;;
+    esac
+done
 
-if [[ $setup_domain =~ ^[Yy]$ ]]; then
-    echo -e "\n${GREEN}请输入域名：${NC}"
-    read -r domain_name
-
+if [ -n "$domain_name" ]; then
     # 安装certbot
     apt-get install -y certbot python3-certbot-nginx
     
@@ -122,7 +143,7 @@ if ! docker ps | grep -q vps-value-tracker; then
 fi
 
 echo -e "${GREEN}安装完成！${NC}"
-if [[ $setup_domain =~ ^[Yy]$ ]]; then
+if [ -n "$domain_name" ]; then
     echo "您可以通过访问 https://$domain_name 来访问应用"
 else
     echo "您可以通过访问 http://服务器IP:8080 来访问应用"
