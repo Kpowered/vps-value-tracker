@@ -12,62 +12,71 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
-    
-    // 先设置事件监听器，确保所有事件都能被正确捕获
     setupEventListeners();
     
-    // 检查登录状态并相应处理
+    // 检查是否已经设置了密码
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    const sessionToken = sessionStorage.getItem(CONFIG.SESSION_KEY);
-
+    
     if (!savedPassword) {
-        // 首次使用，显示密码设置界面
-        showPasswordSetupUI();
-    } else if (sessionToken) {
-        // 已登录状态
-        showLoggedInUI();
+        // 首次使用，需要设置密码
+        const password = await promptPassword('请设置管理密码（至少6位）：');
+        if (password) {
+            localStorage.setItem(CONFIG.PASSWORD_KEY, password);
+            localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in'); // 使用 localStorage 而不是 sessionStorage
+            showLoggedInUI();
+        } else {
+            showLoggedOutUI();
+        }
     } else {
-        // 有密码但未登录
-        showLoggedOutUI();
+        // 检查登录状态
+        const isLoggedIn = localStorage.getItem(CONFIG.SESSION_KEY) === 'logged_in';
+        if (isLoggedIn) {
+            showLoggedInUI();
+        } else {
+            showLoggedOutUI();
+        }
     }
 }
 
-// 显示密码设置界面
-function showPasswordSetupUI() {
-    const password = prompt('请设置管理密码（至少6位）：');
-    if (!password) {
-        showLoggedOutUI();
-        return;
-    }
-
-    if (password.length < 6) {
-        alert('密码长度不能少于6位！');
-        showPasswordSetupUI();
-        return;
-    }
-
-    // 保存密码并直接进入登录状态
-    localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-    sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
-    showLoggedInUI();
+// 密码输入提示
+function promptPassword(message) {
+    return new Promise((resolve) => {
+        const password = prompt(message);
+        if (!password) {
+            resolve(null);
+            return;
+        }
+        
+        if (password.length < 6) {
+            alert('密码长度不能少于6位！');
+            resolve(promptPassword(message));
+            return;
+        }
+        
+        resolve(password);
+    });
 }
 
 // 处理登录
-function handleLogin() {
+async function handleLogin() {
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    
-    // 如果还没有设置密码，先设置密码
     if (!savedPassword) {
-        showPasswordSetupUI();
+        // 如果没有设置密码，先设置密码
+        const password = await promptPassword('请设置管理密码（至少6位）：');
+        if (password) {
+            localStorage.setItem(CONFIG.PASSWORD_KEY, password);
+            localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+            showLoggedInUI();
+        }
         return;
     }
-
-    const password = prompt('请输入管理密码：');
+    
+    // 已有密码，进行登录
+    const password = await promptPassword('请输入管理密码：');
     if (!password) return;
-
+    
     if (password === savedPassword) {
-        // 登录成功，设置会话状态并更新界面
-        sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+        localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
         showLoggedInUI();
     } else {
         alert('密码错误！');
