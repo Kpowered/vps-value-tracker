@@ -69,11 +69,6 @@ if [ -f "docker/Dockerfile" ]; then
     fi
 
     echo "正在构建镜像..."
-    # 使用完整的构建上下文
-    echo "当前目录: $(pwd)"
-    echo "构建上下文内容:"
-    ls -la
-    
     # 确保使用正确的标签格式
     docker build -t localhost/vps-value-tracker:latest -f docker/Dockerfile .
     
@@ -89,13 +84,21 @@ else
 fi
 
 # 域名配置部分
-echo -e "\n${GREEN}是否要配置域名？(y/n): ${NC}"
-read -e -p "" setup_domain
+if [ "$SETUP_DOMAIN" = "yes" ] && [ -n "$DOMAIN_NAME" ]; then
+    # 使用环境变量中的域名
+    domain_name="$DOMAIN_NAME"
+else
+    # 询问是否配置域名
+    echo -e "\n${GREEN}是否要配置域名？(y/n): ${NC}"
+    read -e -p "" setup_domain
 
-if [ "$setup_domain" = "y" ]; then
-    echo -e "\n${GREEN}请输入域名: ${NC}"
-    read -e -p "" domain_name
-    
+    if [ "$setup_domain" = "y" ]; then
+        echo -e "\n${GREEN}请输入域名: ${NC}"
+        read -e -p "" domain_name
+    fi
+fi
+
+if [ -n "$domain_name" ]; then
     # 安装certbot
     apt-get install -y certbot python3-certbot-nginx
     
