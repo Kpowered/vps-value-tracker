@@ -18,17 +18,14 @@ async function init() {
 
 // 检查并恢复登录状态
 function checkAndRestoreLoginState() {
-    const isLoggedIn = localStorage.getItem(CONFIG.LOGIN_STATE_KEY) === 'true';
     const hasPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    const isLoggedIn = localStorage.getItem(CONFIG.LOGIN_STATE_KEY) === 'true';
     
     if (!hasPassword) {
-        // 首次使用，需要设置密码
         setupInitialPassword();
     } else if (isLoggedIn) {
-        // 已登录
         showLoggedInUI();
     } else {
-        // 未登录
         showLoggedOutUI();
     }
 }
@@ -47,7 +44,6 @@ function setupInitialPassword() {
         return;
     }
     
-    // 保存密码并自动登录
     localStorage.setItem(CONFIG.PASSWORD_KEY, password);
     setLoginState(true);
     showLoggedInUI();
