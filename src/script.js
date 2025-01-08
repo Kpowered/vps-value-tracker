@@ -12,20 +12,19 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
+    
+    // 先设置事件监听器，确保所有事件都能被正确捕获
     setupEventListeners();
-    checkLoginStatus();
-}
-
-// 检查登录状态
-function checkLoginStatus() {
+    
+    // 检查登录状态并相应处理
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
     const sessionToken = sessionStorage.getItem(CONFIG.SESSION_KEY);
-    
+
     if (!savedPassword) {
-        // 首次使用，需要设置密码
-        showSetPasswordForm();
+        // 首次使用，显示密码设置界面
+        showPasswordSetupUI();
     } else if (sessionToken) {
-        // 已登录
+        // 已登录状态
         showLoggedInUI();
     } else {
         // 有密码但未登录
@@ -33,38 +32,41 @@ function checkLoginStatus() {
     }
 }
 
-// 显示密码设置表单
-function showSetPasswordForm() {
-    const password = prompt('首次使用，请设置管理密码（至少6位）：');
+// 显示密码设置界面
+function showPasswordSetupUI() {
+    const password = prompt('请设置管理密码（至少6位）：');
     if (!password) {
         showLoggedOutUI();
         return;
     }
-    
+
     if (password.length < 6) {
         alert('密码长度不能少于6位！');
-        showSetPasswordForm();
+        showPasswordSetupUI();
         return;
     }
-    
-    // 保存密码并自动登录
+
+    // 保存密码并直接进入登录状态
     localStorage.setItem(CONFIG.PASSWORD_KEY, password);
     sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
     showLoggedInUI();
 }
 
-// 登录处理
+// 处理登录
 function handleLogin() {
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    
+    // 如果还没有设置密码，先设置密码
     if (!savedPassword) {
-        showSetPasswordForm();
+        showPasswordSetupUI();
         return;
     }
-    
+
     const password = prompt('请输入管理密码：');
     if (!password) return;
-    
+
     if (password === savedPassword) {
+        // 登录成功，设置会话状态并更新界面
         sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
         showLoggedInUI();
     } else {
@@ -72,7 +74,7 @@ function handleLogin() {
     }
 }
 
-// 显示已登录UI
+// 显示已登录界面
 function showLoggedInUI() {
     document.getElementById('loginBtn').style.display = 'none';
     document.getElementById('addVpsBtn').style.display = 'block';
@@ -80,7 +82,7 @@ function showLoggedInUI() {
     renderVpsList();
 }
 
-// 显示未登录UI
+// 显示未登录界面
 function showLoggedOutUI() {
     document.getElementById('loginBtn').style.display = 'block';
     document.getElementById('addVpsBtn').style.display = 'none';
