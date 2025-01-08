@@ -45,24 +45,32 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 创建一个临时的 fifo 文件用于输入
-FIFO="/tmp/vps-install-fifo"
-mkfifo "$FIFO"
+# 创建一个新的 TTY 用于交互
+exec < /dev/tty
 
-# 启动后台进程来处理用户输入
-(
-    # 等待域名配置提示
-    sleep 2
-    echo "y" > "$FIFO"
-    
-    # 等待域名输入提示
-    sleep 2
-    read -p "请输入域名: " domain
-    echo "$domain" > "$FIFO"
-) &
+# 询问是否继续安装
+echo -e "\n${GREEN}是否继续安装？[Y/n]${NC}"
+read -r install_now
 
-# 运行安装脚本，使用 fifo 作为输入
-cd "$PROJECT_DIR" && ./deploy/install.sh < "$FIFO"
+if [[ $install_now =~ ^[Nn]$ ]]; then
+    echo -e "\n您可以稍后运行以下命令完成安装："
+    echo "cd $PROJECT_DIR"
+    echo "./deploy/install.sh"
+    exit 0
+fi
 
-# 清理
-rm -f "$FIFO" 
+# 询问是否配置域名
+echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
+read -r setup_domain
+
+if [[ $setup_domain =~ ^[Yy]$ ]]; then
+    echo -e "\n${GREEN}请输入域名：${NC}"
+    read -r domain_name
+    export SETUP_DOMAIN="yes"
+    export DOMAIN_NAME="$domain_name"
+else
+    export SETUP_DOMAIN="no"
+fi
+
+# 执行安装脚本
+cd "$PROJECT_DIR" && exec ./deploy/install.sh 

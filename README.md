@@ -6,24 +6,14 @@
 
 ### 方式一：一键安装（快速部署）
 
-不配置域名：
+下载并运行安装脚本：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh -O install.sh && chmod +x install.sh && sudo ./install.sh
 ```
 
-配置域名：
-```bash
-export DOMAIN=your-domain.com && curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
-```
-
-或使用 wget：
-```bash
-# 不配置域名
-wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
-
-# 配置域名
-export DOMAIN=your-domain.com && wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
-```
+安装过程中可以：
+- 选择是否配置域名
+- 输入自定义域名
 
 ### 方式二：交互式安装（推荐）
 
