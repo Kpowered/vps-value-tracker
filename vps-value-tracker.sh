@@ -45,6 +45,14 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 直接执行安装脚本
+# 创建并执行一个临时脚本来继续安装
 echo -e "${GREEN}开始安装...${NC}"
-cd "$PROJECT_DIR" && exec ./deploy/install.sh 
+TMP_SCRIPT=$(mktemp)
+cat > "$TMP_SCRIPT" << 'EOF'
+#!/bin/bash
+cd /opt/vps-value-tracker && ./deploy/install.sh
+rm -f "$0"
+EOF
+
+chmod +x "$TMP_SCRIPT"
+exec "$TMP_SCRIPT" 
