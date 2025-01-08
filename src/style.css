@@ -21,6 +21,8 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    position: relative;
+    z-index: 1;
 }
 
 header {
@@ -52,15 +54,23 @@ header {
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
 .modal-content {
     background-color: white;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
+    position: relative;
+    margin: 20px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .hidden {
@@ -69,8 +79,6 @@ header {
 
 .form-group {
     margin-bottom: 20px;
-    display: flex;
-    align-items: center;
 }
 
 .form-group label {
@@ -83,7 +91,7 @@ header {
 .input-group {
     display: flex;
     gap: 10px;
-    flex: 1;
+    align-items: center;
 }
 
 .input-group input,
@@ -127,7 +135,7 @@ header {
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: relative;
-    padding-right: 40px;
+    z-index: 1;
 }
 
 .vps-card h3 {
@@ -179,8 +187,34 @@ header {
     width: 200px;
 }
 
-.modal-content {
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 30px;
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-close:hover {
+    color: #333;
 } 

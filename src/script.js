@@ -62,13 +62,20 @@ function convertToCNY(amount, fromCurrency) {
 function calculateRemainingValue(vps) {
     const now = new Date();
     const expiry = new Date(vps.expiryDate);
-    const totalDays = 365;
+    const purchase = new Date(vps.purchaseDate);
+    
+    // 计算总天数（从购买日到到期日）
+    const totalDays = Math.ceil((expiry - purchase) / (1000 * 60 * 60 * 24));
+    // 计算剩余天数
     const remainingDays = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
+    // 计算剩余价值（考虑实际合同期限）
     const remainingValue = (vps.price * remainingDays) / totalDays;
     
     return {
         original: remainingValue,
-        cny: convertToCNY(remainingValue, vps.currency)
+        cny: convertToCNY(remainingValue, vps.currency),
+        remainingDays: remainingDays,
+        totalDays: totalDays
     };
 }
 
@@ -89,16 +96,19 @@ function renderVpsList() {
                 ` : ''}
                 <h3>${vps.provider}</h3>
                 <div class="vps-info">
-                    <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel}</p>
-                    <p>内存: ${vps.ramSize}GB ${vps.ramModel}</p>
-                    <p>硬盘: ${vps.diskSize}GB ${vps.diskModel}</p>
+                    <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel || '未指定'}</p>
+                    <p>内存: ${vps.ramSize}GB ${vps.ramModel ? `(${vps.ramModel})` : ''}</p>
+                    <p>硬盘: ${vps.diskSize}GB ${vps.diskModel ? `(${vps.diskModel})` : ''}</p>
                     <p>流量: ${vps.bandwidth}${vps.bandwidthUnit}</p>
                     <p>价格: ${vps.price} ${vps.currency}</p>
-                    <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString()}</p>
-                    <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString()}</p>
+                    <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString('zh-CN')}</p>
+                    <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString('zh-CN')}</p>
                     <div class="remaining-value">
                         剩余价值: ${remainingValue.original.toFixed(2)} ${vps.currency}
                         (￥${remainingValue.cny.toFixed(2)})
+                        <div class="remaining-days">
+                            剩余天数: ${remainingValue.remainingDays}天 / 总天数: ${remainingValue.totalDays}天
+                        </div>
                     </div>
                 </div>
             </div>
