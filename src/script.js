@@ -1,7 +1,7 @@
 // 配置
 const CONFIG = {
     PASSWORD_KEY: 'admin_password',
-    LOGIN_STATE_KEY: 'is_logged_in',
+    FIXER_API_KEY: 'e65a0dbfc190ce964f2771bca5c08e13',
     STORAGE_KEY: 'vps_data'
 };
 
@@ -11,107 +11,17 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
+    renderVpsList();
     setupEventListeners();
-    initializeLoginState();
-}
-
-// 初始化登录状态
-function initializeLoginState() {
-    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    const isLoggedIn = localStorage.getItem(CONFIG.LOGIN_STATE_KEY) === 'true';
-
-    if (!savedPassword) {
-        // 首次使用，显示密码设置界面
-        handleFirstTimeSetup();
-    } else if (isLoggedIn) {
-        showLoggedInUI();
-    } else {
-        showLoggedOutUI();
-    }
-}
-
-// 处理首次设置
-function handleFirstTimeSetup() {
-    const password = prompt('请设置管理密码（至少6位）：');
-    if (!password) {
-        showLoggedOutUI();
-        return;
-    }
-
-    if (password.length < 6) {
-        alert('密码长度不能少于6位！');
-        handleFirstTimeSetup();
-        return;
-    }
-
-    // 保存密码并登录
-    localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-    localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
-    showLoggedInUI();
-    initializeContent(); // 初始化内容
-}
-
-// 处理登录
-function handleLogin() {
-    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    addExportButton();
     
-    if (!savedPassword) {
-        handleFirstTimeSetup();
-        return;
-    }
-
-    const password = prompt('请输入管理密码：');
-    if (!password) return;
-
-    if (password === savedPassword) {
-        localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
-        showLoggedInUI();
-        initializeContent(); // 初始化内容
+    // 检查是否需要设置初始密码
+    if (!isPasswordSet()) {
+        showSetPasswordForm();
     } else {
-        alert('密码错误！');
+        // 确保登录表单处于正确状态
+        resetLoginForm();
     }
-}
-
-// 处理登出
-function handleLogout() {
-    localStorage.removeItem(CONFIG.LOGIN_STATE_KEY);
-    showLoggedOutUI();
-}
-
-// 显示已登录界面
-function showLoggedInUI() {
-    document.getElementById('loginBtn').style.display = 'none';
-    document.getElementById('addVpsBtn').style.display = 'block';
-    document.getElementById('exportBtn').style.display = 'block';
-    document.getElementById('mainContent').style.display = 'block';
-    renderVpsList();
-}
-
-// 显示未登录界面
-function showLoggedOutUI() {
-    document.getElementById('loginBtn').style.display = 'block';
-    document.getElementById('addVpsBtn').style.display = 'none';
-    document.getElementById('exportBtn').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
-}
-
-// 初始化内容
-function initializeContent() {
-    // 确保主内容区域存在
-    let mainContent = document.getElementById('mainContent');
-    if (!mainContent) {
-        mainContent = document.createElement('div');
-        mainContent.id = 'mainContent';
-        document.body.appendChild(mainContent);
-    }
-    renderVpsList();
-}
-
-// 设置事件监听器
-function setupEventListeners() {
-    document.getElementById('loginBtn').addEventListener('click', handleLogin);
-    document.getElementById('addVpsBtn').addEventListener('click', showAddVpsForm);
-    document.getElementById('exportBtn').addEventListener('click', exportToMarkdown);
 }
 
 // 加载汇率数据
@@ -230,6 +140,63 @@ function renderVpsList() {
     `;
 }
 
+// 设置事件监听器
+function setupEventListeners() {
+    // 登录按钮
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        if (!isPasswordSet()) {
+            showSetPasswordForm();
+        } else {
+            resetLoginForm();
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+    });
+
+    // 添加VPS按钮
+    document.getElementById('addVpsBtn')?.addEventListener('click', () => {
+        document.getElementById('addVpsForm').classList.remove('hidden');
+        
+        // 设置默认日期
+        const today = new Date();
+        const nextYear = new Date();
+        nextYear.setFullYear(today.getFullYear() + 1);
+        
+        document.querySelector('input[name="purchaseDate"]').value = 
+            today.toISOString().split('T')[0];
+        document.querySelector('input[name="expiryDate"]').value = 
+            nextYear.toISOString().split('T')[0];
+    });
+
+    // VPS表单提交
+    document.getElementById('vpsForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const vpsData = {
+            provider: formData.get('provider'),
+            cpuCores: parseInt(formData.get('cpuCores')),
+            cpuModel: formData.get('cpuModel'),
+            ramSize: parseInt(formData.get('ramSize')),
+            ramModel: formData.get('ramModel'),
+            diskSize: parseInt(formData.get('diskSize')),
+            diskModel: formData.get('diskModel'),
+            bandwidth: parseInt(formData.get('bandwidth')),
+            bandwidthUnit: formData.get('bandwidthUnit'),
+            price: parseFloat(formData.get('price')),
+            currency: formData.get('currency'),
+            purchaseDate: formData.get('purchaseDate'),
+            expiryDate: formData.get('expiryDate'),
+            addedDate: new Date().toISOString()
+        };
+
+        const existingData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+        existingData.push(vpsData);
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(existingData));
+
+        closeAddVpsForm();
+        renderVpsList();
+    });
+}
+
 // 登录功能
 function login() {
     const password = document.getElementById('password').value;
@@ -246,10 +213,8 @@ function login() {
 
 // 关闭添加VPS表单
 function closeAddVpsForm() {
-    const modal = document.querySelector('.modal');
-    if (modal) {
-        modal.remove();
-    }
+    document.getElementById('addVpsForm').classList.add('hidden');
+    document.getElementById('vpsForm').reset();
 }
 
 // 添加密码检查函数
@@ -329,124 +294,21 @@ function deleteVps(index) {
     }
 }
 
-// 显示添加VPS表单
-function showAddVpsForm() {
-    const mainContent = document.getElementById('mainContent');
-    const formHtml = `
-        <div class="modal">
-            <div class="modal-content">
-                <h2>添加 VPS</h2>
-                <form id="vpsForm" onsubmit="handleAddVps(event)">
-                    <div class="form-group">
-                        <label>商家名称:</label>
-                        <input type="text" name="provider" required>
-                    </div>
-                    <div class="form-group">
-                        <label>CPU配置:</label>
-                        <input type="number" name="cpuCores" placeholder="核心数" required>
-                        <input type="text" name="cpuModel" placeholder="型号">
-                    </div>
-                    <div class="form-group">
-                        <label>内存:</label>
-                        <input type="number" name="ramSize" placeholder="GB" required>
-                    </div>
-                    <div class="form-group">
-                        <label>硬盘:</label>
-                        <input type="number" name="diskSize" placeholder="GB" required>
-                    </div>
-                    <div class="form-group">
-                        <label>流量:</label>
-                        <input type="number" name="bandwidth" required>
-                        <select name="bandwidthUnit">
-                            <option value="GB">GB</option>
-                            <option value="TB">TB</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>价格:</label>
-                        <input type="number" name="price" step="0.01" required>
-                        <select name="currency">
-                            <option value="CNY">CNY</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>购买日期:</label>
-                        <input type="date" name="purchaseDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label>到期日期:</label>
-                        <input type="date" name="expiryDate" required>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit">保存</button>
-                        <button type="button" onclick="closeAddVpsForm()">取消</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-    mainContent.insertAdjacentHTML('beforeend', formHtml);
-}
-
-// 处理添加VPS
-function handleAddVps(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
-    const vpsData = {
-        provider: formData.get('provider'),
-        cpuCores: parseInt(formData.get('cpuCores')),
-        cpuModel: formData.get('cpuModel'),
-        ramSize: parseInt(formData.get('ramSize')),
-        diskSize: parseInt(formData.get('diskSize')),
-        bandwidth: parseInt(formData.get('bandwidth')),
-        bandwidthUnit: formData.get('bandwidthUnit'),
-        price: parseFloat(formData.get('price')),
-        currency: formData.get('currency'),
-        purchaseDate: formData.get('purchaseDate'),
-        expiryDate: formData.get('expiryDate'),
-        addedDate: new Date().toISOString()
-    };
-
-    // 保存数据
-    const existingData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
-    existingData.push(vpsData);
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(existingData));
-
-    // 关闭表单并刷新列表
-    closeAddVpsForm();
-    renderVpsList();
-}
-
-// 导出数据为Markdown
+// 添加导出为 Markdown 表格的函数
 function exportToMarkdown() {
-    const vpsList = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
-    if (vpsList.length === 0) {
-        alert('没有数据可导出！');
-        return;
-    }
-
-    let markdown = '# VPS列表\n\n';
-    markdown += '| 商家 | CPU | 内存 | 硬盘 | 流量 | 价格 | 购买日期 | 到期日期 | 剩余价值 |\n';
-    markdown += '|------|-----|------|------|------|------|----------|----------|----------|\n';
-
-    vpsList.forEach(vps => {
+    const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+    
+    // 表格头部
+    let markdown = `| 商家 | CPU | 内存 | 硬盘 | 流量 | 价格 | 购买日期 | 到期时间 | 剩余价值 | 剩余天数 |\n`;
+    markdown += `|------|-----|------|------|------|------|----------|----------|----------|----------|\n`;
+    
+    // 表格内容
+    vpsData.forEach(vps => {
         const remainingValue = calculateRemainingValue(vps);
-        markdown += `| ${vps.provider} | ${vps.cpuCores}核 ${vps.cpuModel || ''} | ${vps.ramSize}GB | ${vps.diskSize}GB | ${vps.bandwidth}${vps.bandwidthUnit} | ${vps.price}${vps.currency} | ${vps.purchaseDate} | ${vps.expiryDate} | ${remainingValue.original.toFixed(2)}${vps.currency} |\n`;
+        markdown += `| ${vps.provider} | ${vps.cpuCores}核 ${vps.cpuModel || '未指定'} | ${vps.ramSize}GB ${vps.ramModel || ''} | ${vps.diskSize}GB ${vps.diskModel || ''} | ${vps.bandwidth}${vps.bandwidthUnit} | ${vps.price} ${vps.currency} | ${new Date(vps.purchaseDate).toLocaleDateString('zh-CN')} | ${new Date(vps.expiryDate).toLocaleDateString('zh-CN')} | ${remainingValue.original.toFixed(2)} ${vps.currency} (￥${remainingValue.cny.toFixed(2)}) | ${remainingValue.remainingDays}/${remainingValue.totalDays} |\n`;
     });
-
-    // 创建下载链接
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vps-list-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    
+    return markdown;
 }
 
 // 添加导出按钮到页面

@@ -1,67 +1,185 @@
-/* 基础样式 */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --background-color: #f8f9fa;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     line-height: 1.6;
-    margin: 0;
-    padding: 20px;
-    background-color: #f5f5f5;
+    background-color: var(--background-color);
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
 }
 
-h1 {
-    color: #333;
-    text-align: center;
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 30px;
 }
 
-/* 按钮样式 */
-.controls {
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-button {
+.btn {
     padding: 8px 16px;
-    margin: 0 5px;
+    background-color: var(--primary-color);
+    color: white;
     border: none;
     border-radius: 4px;
-    background-color: #4CAF50;
-    color: white;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-button:hover {
-    background-color: #45a049;
+.btn:hover {
+    opacity: 0.9;
 }
 
-/* 表单样式 */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
+    padding: 20px;
+    z-index: 1000;
+    overflow-y: auto;
 }
 
 .modal-content {
     background-color: white;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
+    width: 90%;
     max-width: 500px;
-    width: 100%;
+    position: relative;
+    margin: 20px auto;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    width: 100px;
+    margin-right: 10px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.input-group input,
+.input-group select {
+    flex: 1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.form-actions .btn {
+    min-width: 120px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+    margin-left: 10px;
+}
+
+.btn-secondary:hover {
+    opacity: 0.9;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.vps-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
+}
+
+.vps-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.remaining-value {
+    color: var(--success-color);
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+.vps-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
 }
 
 .form-group {
@@ -69,50 +187,269 @@ button:hover {
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
+    display: inline-block;
+    width: 100px;
+    margin-right: 10px;
+}
+
+.form-group input[type="date"] {
+    width: 200px;
+}
+
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
     color: #666;
 }
 
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+.modal-close:hover {
+    color: #333;
 }
 
-/* 表格样式 */
-table {
+.vps-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.vps-info p {
+    margin: 0;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.remaining-value {
+    grid-column: 1 / -1;
+    background-color: #e8f5e9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.remaining-days {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+    transform: scale(1.1);
+}
+
+.info-label {
+    font-weight: 500;
+    color: #666;
+    margin-right: 5px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #333;
+}
+
+/* 添加 Markdown 相关样式 */
+.markdown-container {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+    max-height: 400px;
+    overflow-x: auto;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+}
+
+.markdown-container pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 10px;
+}
+
+/* 添加滚动条样式 */
+.markdown-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.markdown-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.markdown-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.markdown-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 添加表格样式 */
+.vps-table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.vps-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    min-width: 1000px; /* 确保表格不会过于压缩 */
 }
 
-th, td {
+.vps-table th,
+.vps-table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #eee;
 }
 
-th {
-    background-color: #f8f8f8;
+.vps-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.vps-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.vps-table td {
+    vertical-align: middle;
+}
+
+/* 剩余价值列样式 */
+.vps-table .remaining-value {
+    color: var(--success-color);
     font-weight: 600;
 }
 
-tr:hover {
-    background-color: #f5f5f5;
+.vps-table .cny-value {
+    font-size: 0.9em;
+    color: #666;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
+/* 删除按钮样式 */
+.delete-btn-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.delete-btn-small:hover {
+    background-color: #c82333;
+    transform: scale(1.1);
+}
+
+/* 响应式滚动条样式 */
+.vps-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.vps-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.vps-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.vps-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 确保表格在移动设备上可以水平滚动 */
+@media (max-width: 1200px) {
+    .vps-table-container {
+        margin: 20px -20px;
+        width: calc(100% + 40px);
+        border-radius: 0;
     }
-    
-    table {
-        display: block;
-        overflow-x: auto;
-    }
+}
+
+/* 添加复制成功动画 */
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.copy-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    animation: fadeInOut 2s ease-in-out;
+    z-index: 2000;
 } 
