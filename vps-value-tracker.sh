@@ -50,24 +50,6 @@ TMP_SCRIPT=$(mktemp)
 cat > "$TMP_SCRIPT" << 'EOF'
 #!/bin/bash
 
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m'
-
-# 询问是否配置域名
-echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
-read -r setup_domain
-
-if [[ $setup_domain =~ ^[Yy]$ ]]; then
-    echo -e "\n${GREEN}请输入域名：${NC}"
-    read -r domain_name
-    export SETUP_DOMAIN="yes"
-    export DOMAIN_NAME="$domain_name"
-else
-    export SETUP_DOMAIN="no"
-fi
-
 # 执行安装脚本
 cd /opt/vps-value-tracker && ./deploy/install.sh
 EOF
