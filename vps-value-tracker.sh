@@ -45,19 +45,15 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 创建一个新的 TTY 用于交互
-exec < /dev/tty
+# 创建临时脚本
+TMP_SCRIPT=$(mktemp)
+cat > "$TMP_SCRIPT" << 'EOF'
+#!/bin/bash
 
-# 询问是否继续安装
-echo -e "\n${GREEN}是否继续安装？[Y/n]${NC}"
-read -r install_now
-
-if [[ $install_now =~ ^[Nn]$ ]]; then
-    echo -e "\n您可以稍后运行以下命令完成安装："
-    echo "cd $PROJECT_DIR"
-    echo "./deploy/install.sh"
-    exit 0
-fi
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
 # 询问是否配置域名
 echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
@@ -73,4 +69,13 @@ else
 fi
 
 # 执行安装脚本
-cd "$PROJECT_DIR" && exec ./deploy/install.sh 
+cd /opt/vps-value-tracker && ./deploy/install.sh
+EOF
+
+chmod +x "$TMP_SCRIPT"
+
+# 使用 script 命令来模拟终端
+script -qec "$TMP_SCRIPT" /dev/null
+
+# 清理临时文件
+rm -f "$TMP_SCRIPT" 

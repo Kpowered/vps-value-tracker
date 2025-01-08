@@ -11,16 +11,49 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
-    renderVpsList();
-    setupEventListeners();
-    addExportButton();
     
-    // 检查是否需要设置初始密码
-    if (!isPasswordSet()) {
-        showSetPasswordForm();
+    // 检查是否已登录
+    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    if (savedPassword) {
+        // 如果有保存的密码，尝试自动登录
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('addVpsBtn').style.display = 'block';
+        document.getElementById('exportBtn').style.display = 'block';
     } else {
-        // 确保登录表单处于正确状态
-        resetLoginForm();
+        // 如果没有保存的密码，显示登录按钮
+        document.getElementById('loginBtn').style.display = 'block';
+        document.getElementById('addVpsBtn').style.display = 'none';
+        document.getElementById('exportBtn').style.display = 'none';
+    }
+    
+    renderVpsList();
+}
+
+// 登录处理
+function handleLogin() {
+    const password = prompt('请输入管理密码（至少6位）：');
+    if (!password) return;
+    
+    if (password.length < 6) {
+        alert('密码长度不能少于6位！');
+        return;
+    }
+    
+    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    if (!savedPassword) {
+        // 首次设置密码
+        localStorage.setItem(CONFIG.PASSWORD_KEY, password);
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('addVpsBtn').style.display = 'block';
+        document.getElementById('exportBtn').style.display = 'block';
+    } else if (password === savedPassword) {
+        // 密码正确
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('addVpsBtn').style.display = 'block';
+        document.getElementById('exportBtn').style.display = 'block';
+    } else {
+        // 密码错误
+        alert('密码错误！');
     }
 }
 
