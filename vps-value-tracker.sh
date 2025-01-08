@@ -59,23 +59,21 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}Docker镜像构建成功${NC}"
 
-# 创建临时脚本来处理域名配置
-TMP_SCRIPT=$(mktemp)
-cat > "$TMP_SCRIPT" << 'EOF'
-#!/bin/bash
-read -p "是否要配置域名？[y/N] " setup_domain
-if [[ $setup_domain =~ ^[Yy]$ ]]; then
-    read -p "请输入域名：" domain_name
-    echo "$domain_name"
+# 检查是否可以交互
+if tty -s; then
+    # 可以交互，询问域名配置
+    echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
+    read -r setup_domain
+    
+    if [[ $setup_domain =~ ^[Yy]$ ]]; then
+        echo -e "\n${GREEN}请输入域名：${NC}"
+        read -r domain_name
+    fi
 else
-    echo ""
+    # 不能交互，跳过域名配置
+    echo "非交互式环境，跳过域名配置"
+    domain_name=""
 fi
-EOF
-chmod +x "$TMP_SCRIPT"
-
-# 获取域名配置
-domain_name=$(bash "$TMP_SCRIPT")
-rm -f "$TMP_SCRIPT"
 
 if [ -n "$domain_name" ]; then
     # 安装certbot

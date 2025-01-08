@@ -4,16 +4,18 @@
 
 ## 安装方法
 
-使用以下命令一键安装：
+使用以下命令一键安装（不配置域名）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
 ```
 
-或者：
+或者下载脚本后运行（支持域名配置）：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh
+chmod +x vps-value-tracker.sh
+sudo ./vps-value-tracker.sh
 ```
 
 安装过程中可以：
