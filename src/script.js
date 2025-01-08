@@ -12,10 +12,8 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
-    
-    // 检查登录状态
     checkLoginStatus();
-    renderVpsList();
+    setupEventListeners();
 }
 
 // 检查登录状态
@@ -24,11 +22,14 @@ function checkLoginStatus() {
     const sessionToken = sessionStorage.getItem(CONFIG.SESSION_KEY);
     
     if (savedPassword && sessionToken) {
-        // 已登录状态
         showLoggedInUI();
     } else {
-        // 未登录状态
         showLoggedOutUI();
+        // 如果有保存的密码但没有会话令牌，自动登录
+        if (savedPassword && !sessionToken) {
+            sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+            showLoggedInUI();
+        }
     }
 }
 
@@ -37,6 +38,7 @@ function showLoggedInUI() {
     document.getElementById('loginBtn').style.display = 'none';
     document.getElementById('addVpsBtn').style.display = 'block';
     document.getElementById('exportBtn').style.display = 'block';
+    renderVpsList(); // 确保显示数据
 }
 
 // 显示未登录UI
@@ -62,10 +64,12 @@ function handleLogin() {
         localStorage.setItem(CONFIG.PASSWORD_KEY, password);
         sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
         showLoggedInUI();
+        renderVpsList(); // 立即更新界面
     } else if (password === savedPassword) {
         // 密码正确
         sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
         showLoggedInUI();
+        renderVpsList(); // 立即更新界面
     } else {
         // 密码错误
         alert('密码错误！');
@@ -190,59 +194,9 @@ function renderVpsList() {
 
 // 设置事件监听器
 function setupEventListeners() {
-    // 登录按钮
-    document.getElementById('loginBtn').addEventListener('click', () => {
-        if (!isPasswordSet()) {
-            showSetPasswordForm();
-        } else {
-            resetLoginForm();
-            document.getElementById('loginForm').classList.remove('hidden');
-        }
-    });
-
-    // 添加VPS按钮
-    document.getElementById('addVpsBtn')?.addEventListener('click', () => {
-        document.getElementById('addVpsForm').classList.remove('hidden');
-        
-        // 设置默认日期
-        const today = new Date();
-        const nextYear = new Date();
-        nextYear.setFullYear(today.getFullYear() + 1);
-        
-        document.querySelector('input[name="purchaseDate"]').value = 
-            today.toISOString().split('T')[0];
-        document.querySelector('input[name="expiryDate"]').value = 
-            nextYear.toISOString().split('T')[0];
-    });
-
-    // VPS表单提交
-    document.getElementById('vpsForm')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const vpsData = {
-            provider: formData.get('provider'),
-            cpuCores: parseInt(formData.get('cpuCores')),
-            cpuModel: formData.get('cpuModel'),
-            ramSize: parseInt(formData.get('ramSize')),
-            ramModel: formData.get('ramModel'),
-            diskSize: parseInt(formData.get('diskSize')),
-            diskModel: formData.get('diskModel'),
-            bandwidth: parseInt(formData.get('bandwidth')),
-            bandwidthUnit: formData.get('bandwidthUnit'),
-            price: parseFloat(formData.get('price')),
-            currency: formData.get('currency'),
-            purchaseDate: formData.get('purchaseDate'),
-            expiryDate: formData.get('expiryDate'),
-            addedDate: new Date().toISOString()
-        };
-
-        const existingData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
-        existingData.push(vpsData);
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(existingData));
-
-        closeAddVpsForm();
-        renderVpsList();
-    });
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+    document.getElementById('addVpsBtn').addEventListener('click', showAddVpsForm);
+    document.getElementById('exportBtn').addEventListener('click', exportToMarkdown);
 }
 
 // 登录功能

@@ -16,7 +16,15 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 确保可以读取用户输入
-exec < /dev/tty
+if [ -t 0 ]; then
+    # 直接运行脚本
+    INTERACTIVE=true
+else
+    # 通过管道运行
+    INTERACTIVE=true  # 仍然设置为 true，因为我们会使用 /dev/tty
+    # 重新连接到终端
+    exec 0</dev/tty
+fi
 
 # 检查并安装必要的命令
 echo "正在安装必要的包..."
