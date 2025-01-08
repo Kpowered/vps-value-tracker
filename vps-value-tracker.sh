@@ -17,7 +17,7 @@ fi
 
 # 检查并安装必要的命令
 echo -n "检查必要的命令... "
-for cmd in docker curl wget git expect; do
+for cmd in docker curl wget git; do
     if ! command -v $cmd &> /dev/null; then
         echo -e "${RED}错误: 未找到 $cmd${NC}"
         echo "正在安装必要的包..."
@@ -45,39 +45,24 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 创建交互式安装脚本
-TMP_SCRIPT=$(mktemp)
-cat > "$TMP_SCRIPT" << 'EOF'
-#!/usr/bin/expect -f
+# 创建一个临时的 fifo 文件用于输入
+FIFO="/tmp/vps-install-fifo"
+mkfifo "$FIFO"
 
-# 设置超时时间
-set timeout 300
+# 启动后台进程来处理用户输入
+(
+    # 等待域名配置提示
+    sleep 2
+    echo "y" > "$FIFO"
+    
+    # 等待域名输入提示
+    sleep 2
+    read -p "请输入域名: " domain
+    echo "$domain" > "$FIFO"
+) &
 
-# 启动安装脚本
-spawn /opt/vps-value-tracker/deploy/install.sh
+# 运行安装脚本，使用 fifo 作为输入
+cd "$PROJECT_DIR" && ./deploy/install.sh < "$FIFO"
 
-# 等待域名配置提示
-expect "是否要配置域名？(y/n): "
-# 发送回车以获取用户输入
-send "\r"
-interact
-
-# 如果用户输入了 y，等待域名输入
-expect {
-    "请输入域名: " {
-        # 发送回车以获取用户输入
-        send "\r"
-        interact
-    }
-    eof
-}
-
-# 等待脚本结束
-expect eof
-EOF
-
-chmod +x "$TMP_SCRIPT"
-
-# 运行交互式脚本
-"$TMP_SCRIPT"
-rm -f "$TMP_SCRIPT" 
+# 清理
+rm -f "$FIFO" 
