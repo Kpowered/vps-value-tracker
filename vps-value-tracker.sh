@@ -15,18 +15,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 检查是否是通过管道运行
-if [ -t 0 ]; then
-    # 终端运行 - 使用交互模式
-    INTERACTIVE=true
-else
-    # 通过管道运行 - 使用自动模式
-    INTERACTIVE=false
-fi
-
 # 检查并安装必要的命令
 echo -n "检查必要的命令... "
-for cmd in docker curl wget git; do
+for cmd in docker curl wget git expect; do
     if ! command -v $cmd &> /dev/null; then
         echo -e "${RED}错误: 未找到 $cmd${NC}"
         echo "正在安装必要的包..."
@@ -54,38 +45,39 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-if [ "$INTERACTIVE" = true ]; then
-    # 交互式安装
-    echo -e "\n${GREEN}是否现在开始安装？[Y/n]${NC}"
-    read -r install_now
-    if [[ $install_now =~ ^[Nn]$ ]]; then
-        echo -e "\n您可以稍后运行以下命令完成安装："
-        echo "cd $PROJECT_DIR"
-        echo "./deploy/install.sh"
-        exit 0
-    fi
+# 创建交互式安装脚本
+TMP_SCRIPT=$(mktemp)
+cat > "$TMP_SCRIPT" << 'EOF'
+#!/usr/bin/expect -f
 
-    echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
-    read -r setup_domain
-    if [[ $setup_domain =~ ^[Yy]$ ]]; then
-        echo -e "\n${GREEN}请输入域名：${NC}"
-        read -r domain_name
-        export SETUP_DOMAIN="yes"
-        export DOMAIN_NAME="$domain_name"
-    else
-        export SETUP_DOMAIN="no"
-    fi
-else
-    # 自动安装 - 检查环境变量
-    if [ -n "$DOMAIN" ]; then
-        echo -e "${GREEN}使用提供的域名: $DOMAIN${NC}"
-        export SETUP_DOMAIN="yes"
-        export DOMAIN_NAME="$DOMAIN"
-    else
-        echo -e "${GREEN}执行自动安装（无域名配置）...${NC}"
-        export SETUP_DOMAIN="no"
-    fi
-fi
+# 设置超时时间
+set timeout 300
 
-# 执行安装脚本
-cd "$PROJECT_DIR" && ./deploy/install.sh 
+# 启动安装脚本
+spawn /opt/vps-value-tracker/deploy/install.sh
+
+# 等待域名配置提示
+expect "是否要配置域名？(y/n): "
+# 发送回车以获取用户输入
+send "\r"
+interact
+
+# 如果用户输入了 y，等待域名输入
+expect {
+    "请输入域名: " {
+        # 发送回车以获取用户输入
+        send "\r"
+        interact
+    }
+    eof
+}
+
+# 等待脚本结束
+expect eof
+EOF
+
+chmod +x "$TMP_SCRIPT"
+
+# 运行交互式脚本
+"$TMP_SCRIPT"
+rm -f "$TMP_SCRIPT" 

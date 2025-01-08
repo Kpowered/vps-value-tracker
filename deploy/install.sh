@@ -89,8 +89,12 @@ else
 fi
 
 # 域名配置部分
-if [ "$SETUP_DOMAIN" = "yes" ]; then
-    domain_name="$DOMAIN_NAME"
+echo -e "\n${GREEN}是否要配置域名？(y/n): ${NC}"
+read -e -p "" setup_domain
+
+if [ "$setup_domain" = "y" ]; then
+    echo -e "\n${GREEN}请输入域名: ${NC}"
+    read -e -p "" domain_name
     
     # 安装certbot
     apt-get install -y certbot python3-certbot-nginx
