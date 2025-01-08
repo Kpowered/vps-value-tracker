@@ -45,26 +45,7 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 运行安装脚本
-echo "是否现在安装服务？[y/N]"
-read -r install_now
-
-if [[ "$install_now" =~ ^[Yy]$ ]]; then
-    cd "$PROJECT_DIR"
-    ./deploy/install.sh
-else
-    echo -e "\n${GREEN}下载完成！${NC}"
-    echo "要安装服务，请运行:"
-    echo "cd $PROJECT_DIR"
-    echo "./deploy/install.sh"
-fi
-
-# 显示帮助信息
-echo -e "\n使用说明:"
-echo "1. 安装服务: ./deploy/install.sh"
-echo "2. 查看容器状态: docker ps"
-echo "3. 查看容器日志: docker logs vps-value-tracker"
-echo "4. 重启服务: docker restart vps-value-tracker"
-echo "5. 停止服务: docker stop vps-value-tracker"
-echo "6. 启动服务: docker start vps-value-tracker"
-echo "7. 卸载服务: docker rm -f vps-value-tracker" 
+# 自动运行安装脚本
+echo "正在开始安装..."
+cd "$PROJECT_DIR"
+./deploy/install.sh 
