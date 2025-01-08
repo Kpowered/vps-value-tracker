@@ -59,28 +59,20 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}Docker镜像构建成功${NC}"
 
-# 检查是否可以交互
+# 询问是否配置域名
 if tty -s; then
-    # 可以交互，询问域名配置
     echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
     read -r setup_domain
     
     if [[ $setup_domain =~ ^[Yy]$ ]]; then
         echo -e "\n${GREEN}请输入域名：${NC}"
         read -r domain_name
-    fi
-else
-    # 不能交互，跳过域名配置
-    echo "非交互式环境，跳过域名配置"
-    domain_name=""
-fi
-
-if [ -n "$domain_name" ]; then
-    # 安装certbot
-    apt-get install -y certbot python3-certbot-nginx
-    
-    # 配置Nginx
-    cat > /etc/nginx/conf.d/vps-tracker.conf <<EOF
+        
+        # 安装certbot
+        apt-get install -y certbot python3-certbot-nginx
+        
+        # 配置Nginx
+        cat > /etc/nginx/conf.d/vps-tracker.conf <<EOF
 server {
     listen 80;
     server_name $domain_name;
@@ -93,11 +85,19 @@ server {
 }
 EOF
 
-    # 获取SSL证书
-    certbot --nginx -d $domain_name --non-interactive --agree-tos --email admin@$domain_name
-    
-    # 重启Nginx
-    systemctl restart nginx
+        # 获取SSL证书
+        certbot --nginx -d $domain_name --non-interactive --agree-tos --email admin@$domain_name
+        
+        # 重启Nginx
+        systemctl restart nginx
+        
+        echo -e "${GREEN}域名配置完成！您可以通过 https://$domain_name 访问应用${NC}"
+    else
+        echo -e "${GREEN}跳过域名配置，您可以通过 http://服务器IP:8080 访问应用${NC}"
+    fi
+else
+    echo -e "${GREEN}非交互式环境，跳过域名配置${NC}"
+    echo -e "${GREEN}您可以通过 http://服务器IP:8080 访问应用${NC}"
 fi
 
 # 启动容器
