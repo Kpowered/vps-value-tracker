@@ -15,6 +15,15 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 检查是否是通过管道运行
+if [ -t 0 ]; then
+    # 终端运行 - 使用交互模式
+    INTERACTIVE=true
+else
+    # 通过管道运行 - 使用自动模式
+    INTERACTIVE=false
+fi
+
 # 检查并安装必要的命令
 echo -n "检查必要的命令... "
 for cmd in docker curl wget git; do
@@ -45,44 +54,38 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 创建交互式安装脚本
-TMP_SCRIPT=$(mktemp)
-cat > "$TMP_SCRIPT" << 'EOF'
-#!/bin/bash
+if [ "$INTERACTIVE" = true ]; then
+    # 交互式安装
+    echo -e "\n${GREEN}是否现在开始安装？[Y/n]${NC}"
+    read -r install_now
+    if [[ $install_now =~ ^[Nn]$ ]]; then
+        echo -e "\n您可以稍后运行以下命令完成安装："
+        echo "cd $PROJECT_DIR"
+        echo "./deploy/install.sh"
+        exit 0
+    fi
 
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m'
-
-# 询问是否继续安装
-echo -e "\n${GREEN}是否现在开始安装？[Y/n]${NC}"
-read -r install_now
-if [[ $install_now =~ ^[Nn]$ ]]; then
-    echo -e "\n您可以稍后运行以下命令完成安装："
-    echo "cd /opt/vps-value-tracker"
-    echo "./deploy/install.sh"
-    exit 0
-fi
-
-# 询问是否配置域名
-echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
-read -r setup_domain
-if [[ $setup_domain =~ ^[Yy]$ ]]; then
-    echo -e "\n${GREEN}请输入域名：${NC}"
-    read -r domain_name
-    export SETUP_DOMAIN="yes"
-    export DOMAIN_NAME="$domain_name"
+    echo -e "\n${GREEN}是否要配置域名？[y/N]${NC}"
+    read -r setup_domain
+    if [[ $setup_domain =~ ^[Yy]$ ]]; then
+        echo -e "\n${GREEN}请输入域名：${NC}"
+        read -r domain_name
+        export SETUP_DOMAIN="yes"
+        export DOMAIN_NAME="$domain_name"
+    else
+        export SETUP_DOMAIN="no"
+    fi
 else
-    export SETUP_DOMAIN="no"
+    # 自动安装 - 检查环境变量
+    if [ -n "$DOMAIN" ]; then
+        echo -e "${GREEN}使用提供的域名: $DOMAIN${NC}"
+        export SETUP_DOMAIN="yes"
+        export DOMAIN_NAME="$DOMAIN"
+    else
+        echo -e "${GREEN}执行自动安装（无域名配置）...${NC}"
+        export SETUP_DOMAIN="no"
+    fi
 fi
 
 # 执行安装脚本
-cd /opt/vps-value-tracker && ./deploy/install.sh
-
-# 清理临时脚本
-rm -f "$0"
-EOF
-
-chmod +x "$TMP_SCRIPT"
-exec "$TMP_SCRIPT" 
+cd "$PROJECT_DIR" && ./deploy/install.sh 

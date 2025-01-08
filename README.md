@@ -4,21 +4,44 @@
 
 ## 安装方法
 
-1. 下载安装脚本：
+### 方式一：一键安装（快速部署）
+
+不配置域名：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh -o vps-value-tracker.sh
+curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
 ```
 
-2. 设置执行权限并运行：
+配置域名：
+```bash
+export DOMAIN=your-domain.com && curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+```
+
+或使用 wget：
+```bash
+# 不配置域名
+wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+
+# 配置域名
+export DOMAIN=your-domain.com && wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+```
+
+### 方式二：交互式安装（推荐）
+
+1. 下载安装脚本：
+```bash
+wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh
+```
+
+2. 运行安装脚本：
 ```bash
 chmod +x vps-value-tracker.sh
 sudo ./vps-value-tracker.sh
 ```
 
-或者使用单行命令（如果你信任源代码）：
-```bash
-curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
-```
+交互式安装可以：
+- 选择是否立即安装
+- 选择是否配置域名
+- 输入自定义域名
 
 ## 功能特点
 
