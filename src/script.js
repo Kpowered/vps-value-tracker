@@ -12,8 +12,8 @@ let exchangeRates = null;
 // 初始化
 async function init() {
     await loadExchangeRates();
-    checkLoginStatus();
     setupEventListeners();
+    checkLoginStatus();
 }
 
 // 检查登录状态
@@ -21,15 +21,54 @@ function checkLoginStatus() {
     const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
     const sessionToken = sessionStorage.getItem(CONFIG.SESSION_KEY);
     
-    if (savedPassword && sessionToken) {
+    if (!savedPassword) {
+        // 首次使用，需要设置密码
+        showSetPasswordForm();
+    } else if (sessionToken) {
+        // 已登录
         showLoggedInUI();
     } else {
+        // 有密码但未登录
         showLoggedOutUI();
-        // 如果有保存的密码但没有会话令牌，自动登录
-        if (savedPassword && !sessionToken) {
-            sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
-            showLoggedInUI();
-        }
+    }
+}
+
+// 显示密码设置表单
+function showSetPasswordForm() {
+    const password = prompt('首次使用，请设置管理密码（至少6位）：');
+    if (!password) {
+        showLoggedOutUI();
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('密码长度不能少于6位！');
+        showSetPasswordForm();
+        return;
+    }
+    
+    // 保存密码并自动登录
+    localStorage.setItem(CONFIG.PASSWORD_KEY, password);
+    sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+    showLoggedInUI();
+}
+
+// 登录处理
+function handleLogin() {
+    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    if (!savedPassword) {
+        showSetPasswordForm();
+        return;
+    }
+    
+    const password = prompt('请输入管理密码：');
+    if (!password) return;
+    
+    if (password === savedPassword) {
+        sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+        showLoggedInUI();
+    } else {
+        alert('密码错误！');
     }
 }
 
@@ -38,7 +77,7 @@ function showLoggedInUI() {
     document.getElementById('loginBtn').style.display = 'none';
     document.getElementById('addVpsBtn').style.display = 'block';
     document.getElementById('exportBtn').style.display = 'block';
-    renderVpsList(); // 确保显示数据
+    renderVpsList();
 }
 
 // 显示未登录UI
@@ -46,34 +85,6 @@ function showLoggedOutUI() {
     document.getElementById('loginBtn').style.display = 'block';
     document.getElementById('addVpsBtn').style.display = 'none';
     document.getElementById('exportBtn').style.display = 'none';
-}
-
-// 登录处理
-function handleLogin() {
-    const password = prompt('请输入管理密码（至少6位）：');
-    if (!password) return;
-    
-    if (password.length < 6) {
-        alert('密码长度不能少于6位！');
-        return;
-    }
-    
-    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    if (!savedPassword) {
-        // 首次设置密码
-        localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-        sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
-        showLoggedInUI();
-        renderVpsList(); // 立即更新界面
-    } else if (password === savedPassword) {
-        // 密码正确
-        sessionStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
-        showLoggedInUI();
-        renderVpsList(); // 立即更新界面
-    } else {
-        // 密码错误
-        alert('密码错误！');
-    }
 }
 
 // 加载汇率数据
