@@ -128,7 +128,9 @@ function renderVpsList() {
                                 <td>${remainingValue.remainingDays}/${remainingValue.totalDays}</td>
                                 ${isAdmin ? `
                                     <td>
-                                        <button class="delete-btn-small" onclick="deleteVps(${index})" title="删除">×</button>
+                                        <button class="delete-btn-table" onclick="deleteVps(${index})" title="删除VPS">
+                                            删除
+                                        </button>
                                     </td>
                                 ` : ''}
                             </tr>
@@ -284,14 +286,30 @@ function closeLoginForm() {
     document.getElementById('loginForm').classList.add('hidden');
 }
 
-// 添加删除VPS函数
+// 修改删除VPS函数
 function deleteVps(index) {
-    if (confirm('确定要删除这个VPS吗？此操作不可撤销。')) {
-        const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
-        vpsData.splice(index, 1);
-        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(vpsData));
-        renderVpsList();
-    }
+    const modal = document.createElement('div');
+    modal.className = 'modal confirm-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>确认删除</h2>
+            <p>确定要删除这个VPS吗？此操作不可撤销。</p>
+            <div class="btn-group">
+                <button class="btn btn-danger" onclick="confirmDelete(${index}, this)">确认删除</button>
+                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">取消</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+// 添加确认删除函数
+function confirmDelete(index, button) {
+    const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+    vpsData.splice(index, 1);
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(vpsData));
+    renderVpsList();
+    button.closest('.modal').remove();
 }
 
 // 添加导出为 Markdown 表格的函数

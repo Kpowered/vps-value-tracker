@@ -452,4 +452,47 @@ header {
     border-radius: 4px;
     animation: fadeInOut 2s ease-in-out;
     z-index: 2000;
+}
+
+/* 添加表格中删除按钮的样式 */
+.delete-btn-table {
+    padding: 6px 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    width: auto;
+    height: auto;
+    display: inline-block;
+}
+
+.delete-btn-table:hover {
+    background-color: #c82333;
+    transform: scale(1.05);
+}
+
+/* 修改表格操作列的样式 */
+.vps-table td:last-child {
+    text-align: center;
+    width: 100px;
+}
+
+/* 添加确认删除的模态框样式 */
+.confirm-modal {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.confirm-modal .modal-content {
+    max-width: 400px;
+    text-align: center;
+}
+
+.confirm-modal .btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
 } 
