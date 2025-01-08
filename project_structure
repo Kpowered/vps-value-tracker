@@ -1,0 +1,12 @@
+vps-value-tracker/
+├── src/
+│   ├── index.html
+│   ├── style.css
+│   ├── script.js
+├── docker/
+│   ├── Dockerfile
+│   ├── nginx.conf
+├── deploy/
+│   ├── install.sh
+│   └── nginx-template.conf
+└── README.md 
