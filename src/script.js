@@ -1,9 +1,9 @@
 // 配置
 const CONFIG = {
     PASSWORD_KEY: 'admin_password',
-    SESSION_KEY: 'login_session',
-    FIXER_API_KEY: 'e65a0dbfc190ce964f2771bca5c08e13',
-    STORAGE_KEY: 'vps_data'
+    LOGIN_STATE_KEY: 'is_logged_in',
+    STORAGE_KEY: 'vps_data',
+    FIXER_API_KEY: 'e65a0dbfc190ce964f2771bca5c08e13'
 };
 
 // 汇率数据
@@ -13,74 +13,79 @@ let exchangeRates = null;
 async function init() {
     await loadExchangeRates();
     setupEventListeners();
+    checkAndRestoreLoginState();
+}
+
+// 检查并恢复登录状态
+function checkAndRestoreLoginState() {
+    const isLoggedIn = localStorage.getItem(CONFIG.LOGIN_STATE_KEY) === 'true';
+    const hasPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
     
-    // 检查是否已经设置了密码
-    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    
-    if (!savedPassword) {
+    if (!hasPassword) {
         // 首次使用，需要设置密码
-        const password = await promptPassword('请设置管理密码（至少6位）：');
-        if (password) {
-            localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-            localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in'); // 使用 localStorage 而不是 sessionStorage
-            showLoggedInUI();
-        } else {
-            showLoggedOutUI();
-        }
+        setupInitialPassword();
+    } else if (isLoggedIn) {
+        // 已登录
+        showLoggedInUI();
     } else {
-        // 检查登录状态
-        const isLoggedIn = localStorage.getItem(CONFIG.SESSION_KEY) === 'logged_in';
-        if (isLoggedIn) {
-            showLoggedInUI();
-        } else {
-            showLoggedOutUI();
-        }
+        // 未登录
+        showLoggedOutUI();
     }
 }
 
-// 密码输入提示
-function promptPassword(message) {
-    return new Promise((resolve) => {
-        const password = prompt(message);
-        if (!password) {
-            resolve(null);
-            return;
-        }
-        
-        if (password.length < 6) {
-            alert('密码长度不能少于6位！');
-            resolve(promptPassword(message));
-            return;
-        }
-        
-        resolve(password);
-    });
-}
-
-// 处理登录
-async function handleLogin() {
-    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
-    if (!savedPassword) {
-        // 如果没有设置密码，先设置密码
-        const password = await promptPassword('请设置管理密码（至少6位）：');
-        if (password) {
-            localStorage.setItem(CONFIG.PASSWORD_KEY, password);
-            localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
-            showLoggedInUI();
-        }
+// 设置初始密码
+function setupInitialPassword() {
+    const password = prompt('首次使用，请设置管理密码（至少6位）：');
+    if (!password) {
+        showLoggedOutUI();
         return;
     }
     
-    // 已有密码，进行登录
-    const password = await promptPassword('请输入管理密码：');
+    if (password.length < 6) {
+        alert('密码长度不能少于6位！');
+        setupInitialPassword();
+        return;
+    }
+    
+    // 保存密码并自动登录
+    localStorage.setItem(CONFIG.PASSWORD_KEY, password);
+    setLoginState(true);
+    showLoggedInUI();
+}
+
+// 处理登录
+function handleLogin() {
+    const savedPassword = localStorage.getItem(CONFIG.PASSWORD_KEY);
+    
+    if (!savedPassword) {
+        setupInitialPassword();
+        return;
+    }
+    
+    const password = prompt('请输入管理密码：');
     if (!password) return;
     
     if (password === savedPassword) {
-        localStorage.setItem(CONFIG.SESSION_KEY, 'logged_in');
+        setLoginState(true);
         showLoggedInUI();
     } else {
         alert('密码错误！');
     }
+}
+
+// 设置登录状态
+function setLoginState(isLoggedIn) {
+    if (isLoggedIn) {
+        localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
+    } else {
+        localStorage.removeItem(CONFIG.LOGIN_STATE_KEY);
+    }
+}
+
+// 处理登出
+function handleLogout() {
+    setLoginState(false);
+    showLoggedOutUI();
 }
 
 // 显示已登录界面
