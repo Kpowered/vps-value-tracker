@@ -2,16 +2,22 @@
 
 一个简单而强大的工具，用于跟踪和计算 VPS 服务器的剩余价值。支持多种货币自动转换，并提供直观的数据展示界面。
 
-## 一键安装
+## 安装方法
 
-使用 curl:
+1. 下载安装脚本：
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh -o vps-value-tracker.sh
 ```
 
-或使用 wget:
+2. 设置执行权限并运行：
 ```bash
-wget -qO- https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
+chmod +x vps-value-tracker.sh
+sudo ./vps-value-tracker.sh
+```
+
+或者使用单行命令（如果你信任源代码）：
+```bash
+curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/vps-value-tracker.sh | sudo bash
 ```
 
 ## 功能特点

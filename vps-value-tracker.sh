@@ -45,7 +45,6 @@ echo -n "设置文件权限... "
 chmod +x "$PROJECT_DIR/deploy/install.sh"
 echo -e "${GREEN}完成${NC}"
 
-# 自动运行安装脚本
-echo "正在开始安装..."
-cd "$PROJECT_DIR"
-./deploy/install.sh 
+# 直接执行安装脚本
+echo -e "${GREEN}开始安装...${NC}"
+cd "$PROJECT_DIR" && exec ./deploy/install.sh 
