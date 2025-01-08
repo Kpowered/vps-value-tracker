@@ -8,103 +8,13 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>VPS 剩余价值展示器</h1>
-            <button id="loginBtn" class="btn">登录</button>
-        </header>
-
-        <div id="loginForm" class="modal hidden">
-            <div class="modal-content">
-                <h2>登录</h2>
-                <input type="password" id="password" placeholder="请输入密码">
-                <button onclick="login()">确认</button>
-            </div>
+        <h1>VPS 剩余价值展示器</h1>
+        <div class="controls">
+            <button id="loginBtn">登录</button>
+            <button id="addVpsBtn" style="display: none;">添加 VPS</button>
+            <button id="exportBtn" style="display: none;">导出数据</button>
         </div>
-
-        <div id="adminPanel" class="hidden">
-            <button id="addVpsBtn" class="btn">添加 VPS</button>
-            <div id="addVpsForm" class="modal hidden">
-                <div class="modal-content">
-                    <button type="button" class="modal-close" onclick="closeAddVpsForm()">×</button>
-                    <h2>添加 VPS</h2>
-                    <form id="vpsForm">
-                        <div class="form-group">
-                            <label>商家名称:</label>
-                            <input type="text" name="provider" placeholder="商家名称" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>CPU:</label>
-                            <div class="input-group">
-                                <input type="number" name="cpuCores" placeholder="核心数量" required>
-                                <input type="text" name="cpuModel" placeholder="CPU型号">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>内存:</label>
-                            <div class="input-group">
-                                <input type="number" name="ramSize" placeholder="大小(GB)" required>
-                                <input type="text" name="ramModel" placeholder="内存型号">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>硬盘:</label>
-                            <div class="input-group">
-                                <input type="number" name="diskSize" placeholder="大小(GB)" required>
-                                <input type="text" name="diskModel" placeholder="硬盘型号">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>流量:</label>
-                            <div class="input-group">
-                                <input type="number" name="bandwidth" placeholder="大小" required>
-                                <select name="bandwidthUnit">
-                                    <option value="GB">GB</option>
-                                    <option value="TB">TB</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>价格:</label>
-                            <div class="input-group">
-                                <input type="number" name="price" step="0.01" required>
-                                <select name="currency">
-                                    <option value="CNY">人民币</option>
-                                    <option value="USD">美元</option>
-                                    <option value="EUR">欧元</option>
-                                    <option value="GBP">英镑</option>
-                                    <option value="CAD">加元</option>
-                                    <option value="JPY">日元</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>购买日期:</label>
-                            <input type="date" name="purchaseDate" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>到期时间:</label>
-                            <input type="date" name="expiryDate" required>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">保存</button>
-                            <button type="button" class="btn btn-secondary" onclick="closeAddVpsForm()">取消</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <main id="vpsList">
-            <!-- VPS列表将通过JavaScript动态生成 -->
-        </main>
+        <div id="mainContent" style="display: none;"></div>
     </div>
     <script src="script.js"></script>
 </body>

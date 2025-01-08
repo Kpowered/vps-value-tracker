@@ -48,6 +48,7 @@ function handleFirstTimeSetup() {
     localStorage.setItem(CONFIG.PASSWORD_KEY, password);
     localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
     showLoggedInUI();
+    initializeContent(); // 初始化内容
 }
 
 // 处理登录
@@ -65,6 +66,7 @@ function handleLogin() {
     if (password === savedPassword) {
         localStorage.setItem(CONFIG.LOGIN_STATE_KEY, 'true');
         showLoggedInUI();
+        initializeContent(); // 初始化内容
     } else {
         alert('密码错误！');
     }
@@ -81,6 +83,7 @@ function showLoggedInUI() {
     document.getElementById('loginBtn').style.display = 'none';
     document.getElementById('addVpsBtn').style.display = 'block';
     document.getElementById('exportBtn').style.display = 'block';
+    document.getElementById('mainContent').style.display = 'block';
     renderVpsList();
 }
 
@@ -89,6 +92,26 @@ function showLoggedOutUI() {
     document.getElementById('loginBtn').style.display = 'block';
     document.getElementById('addVpsBtn').style.display = 'none';
     document.getElementById('exportBtn').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'none';
+}
+
+// 初始化内容
+function initializeContent() {
+    // 确保主内容区域存在
+    let mainContent = document.getElementById('mainContent');
+    if (!mainContent) {
+        mainContent = document.createElement('div');
+        mainContent.id = 'mainContent';
+        document.body.appendChild(mainContent);
+    }
+    renderVpsList();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+    document.getElementById('addVpsBtn').addEventListener('click', showAddVpsForm);
+    document.getElementById('exportBtn').addEventListener('click', exportToMarkdown);
 }
 
 // 加载汇率数据
@@ -205,13 +228,6 @@ function renderVpsList() {
             </table>
         </div>
     `;
-}
-
-// 设置事件监听器
-function setupEventListeners() {
-    document.getElementById('loginBtn').addEventListener('click', handleLogin);
-    document.getElementById('addVpsBtn').addEventListener('click', showAddVpsForm);
-    document.getElementById('exportBtn').addEventListener('click', exportToMarkdown);
 }
 
 // 登录功能
