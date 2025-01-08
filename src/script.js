@@ -13,6 +13,7 @@ async function init() {
     await loadExchangeRates();
     renderVpsList();
     setupEventListeners();
+    addExportButton();
     
     // 检查是否需要设置初始密码
     if (!isPasswordSet()) {
@@ -85,35 +86,55 @@ function renderVpsList() {
     const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
     const isAdmin = document.getElementById('adminPanel').classList.contains('hidden') === false;
     
-    vpsList.innerHTML = vpsData.map((vps, index) => {
-        const remainingValue = calculateRemainingValue(vps);
-        return `
-            <div class="vps-card">
-                ${isAdmin ? `
-                    <button class="delete-btn" onclick="deleteVps(${index})" title="删除">
-                        ×
-                    </button>
-                ` : ''}
-                <h3>${vps.provider}</h3>
-                <div class="vps-info">
-                    <p>CPU: ${vps.cpuCores}核 ${vps.cpuModel || '未指定'}</p>
-                    <p>内存: ${vps.ramSize}GB ${vps.ramModel ? `(${vps.ramModel})` : ''}</p>
-                    <p>硬盘: ${vps.diskSize}GB ${vps.diskModel ? `(${vps.diskModel})` : ''}</p>
-                    <p>流量: ${vps.bandwidth}${vps.bandwidthUnit}</p>
-                    <p>价格: ${vps.price} ${vps.currency}</p>
-                    <p>购买日期: ${new Date(vps.purchaseDate).toLocaleDateString('zh-CN')}</p>
-                    <p>到期时间: ${new Date(vps.expiryDate).toLocaleDateString('zh-CN')}</p>
-                    <div class="remaining-value">
-                        剩余价值: ${remainingValue.original.toFixed(2)} ${vps.currency}
-                        (￥${remainingValue.cny.toFixed(2)})
-                        <div class="remaining-days">
-                            剩余天数: ${remainingValue.remainingDays}天 / 总天数: ${remainingValue.totalDays}天
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    // 创建表格视图
+    vpsList.innerHTML = `
+        <div class="vps-table-container">
+            <table class="vps-table">
+                <thead>
+                    <tr>
+                        <th>商家</th>
+                        <th>CPU</th>
+                        <th>内存</th>
+                        <th>硬盘</th>
+                        <th>流量</th>
+                        <th>价格</th>
+                        <th>购买日期</th>
+                        <th>到期时间</th>
+                        <th>剩余价值</th>
+                        <th>剩余天数</th>
+                        ${isAdmin ? '<th>操作</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${vpsData.map((vps, index) => {
+                        const remainingValue = calculateRemainingValue(vps);
+                        return `
+                            <tr>
+                                <td>${vps.provider}</td>
+                                <td>${vps.cpuCores}核 ${vps.cpuModel || '未指定'}</td>
+                                <td>${vps.ramSize}GB ${vps.ramModel ? `(${vps.ramModel})` : ''}</td>
+                                <td>${vps.diskSize}GB ${vps.diskModel ? `(${vps.diskModel})` : ''}</td>
+                                <td>${vps.bandwidth}${vps.bandwidthUnit}</td>
+                                <td>${vps.price} ${vps.currency}</td>
+                                <td>${new Date(vps.purchaseDate).toLocaleDateString('zh-CN')}</td>
+                                <td>${new Date(vps.expiryDate).toLocaleDateString('zh-CN')}</td>
+                                <td class="remaining-value">
+                                    ${remainingValue.original.toFixed(2)} ${vps.currency}<br>
+                                    <span class="cny-value">(￥${remainingValue.cny.toFixed(2)})</span>
+                                </td>
+                                <td>${remainingValue.remainingDays}/${remainingValue.totalDays}</td>
+                                ${isAdmin ? `
+                                    <td>
+                                        <button class="delete-btn-small" onclick="deleteVps(${index})" title="删除">×</button>
+                                    </td>
+                                ` : ''}
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 // 设置事件监听器
@@ -237,6 +258,70 @@ function deleteVps(index) {
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(vpsData));
         renderVpsList();
     }
+}
+
+// 添加导出为 Markdown 表格的函数
+function exportToMarkdown() {
+    const vpsData = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || '[]');
+    
+    // 表格头部
+    let markdown = `| 商家 | CPU | 内存 | 硬盘 | 流量 | 价格 | 购买日期 | 到期时间 | 剩余价值 | 剩余天数 |\n`;
+    markdown += `|------|-----|------|------|------|------|----------|----------|----------|----------|\n`;
+    
+    // 表格内容
+    vpsData.forEach(vps => {
+        const remainingValue = calculateRemainingValue(vps);
+        markdown += `| ${vps.provider} | ${vps.cpuCores}核 ${vps.cpuModel || '未指定'} | ${vps.ramSize}GB ${vps.ramModel || ''} | ${vps.diskSize}GB ${vps.diskModel || ''} | ${vps.bandwidth}${vps.bandwidthUnit} | ${vps.price} ${vps.currency} | ${new Date(vps.purchaseDate).toLocaleDateString('zh-CN')} | ${new Date(vps.expiryDate).toLocaleDateString('zh-CN')} | ${remainingValue.original.toFixed(2)} ${vps.currency} (￥${remainingValue.cny.toFixed(2)}) | ${remainingValue.remainingDays}/${remainingValue.totalDays} |\n`;
+    });
+    
+    return markdown;
+}
+
+// 添加导出按钮到页面
+function addExportButton() {
+    const header = document.querySelector('header');
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-secondary';
+    exportBtn.style.marginLeft = '10px';
+    exportBtn.textContent = '导出表格';
+    exportBtn.onclick = () => {
+        const markdown = exportToMarkdown();
+        
+        // 创建一个模态框来显示 Markdown
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <button type="button" class="modal-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                <h2>Markdown 表格</h2>
+                <div class="markdown-container">
+                    <pre>${markdown}</pre>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="copyToClipboard(this)">复制到剪贴板</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    };
+    header.appendChild(exportBtn);
+}
+
+// 复制到剪贴板功能
+function copyToClipboard(button) {
+    const pre = button.parentElement.previousElementSibling.querySelector('pre');
+    const text = pre.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.textContent;
+        button.textContent = '已复制！';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制');
+    });
 }
 
 // 启动应用

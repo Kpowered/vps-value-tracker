@@ -121,6 +121,11 @@ header {
 .btn-secondary {
     background-color: var(--secondary-color);
     color: white;
+    margin-left: 10px;
+}
+
+.btn-secondary:hover {
+    opacity: 0.9;
 }
 
 .btn-danger {
@@ -217,4 +222,208 @@ header {
 
 .modal-close:hover {
     color: #333;
+}
+
+.vps-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.vps-info p {
+    margin: 0;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.remaining-value {
+    grid-column: 1 / -1;
+    background-color: #e8f5e9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.remaining-days {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+    transform: scale(1.1);
+}
+
+.info-label {
+    font-weight: 500;
+    color: #666;
+    margin-right: 5px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #333;
+}
+
+/* 添加 Markdown 相关样式 */
+.markdown-container {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+    max-height: 400px;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.markdown-container pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 添加滚动条样式 */
+.markdown-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.markdown-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.markdown-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.markdown-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 添加表格样式 */
+.vps-table-container {
+    overflow-x: auto;
+    margin: 20px 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.vps-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1000px; /* 确保表格不会过于压缩 */
+}
+
+.vps-table th,
+.vps-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.vps-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.vps-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.vps-table td {
+    vertical-align: middle;
+}
+
+/* 剩余价值列样式 */
+.vps-table .remaining-value {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.vps-table .cny-value {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* 删除按钮样式 */
+.delete-btn-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    padding: 0;
+    margin: 0 auto;
+}
+
+.delete-btn-small:hover {
+    background-color: #c82333;
+    transform: scale(1.1);
+}
+
+/* 响应式滚动条样式 */
+.vps-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.vps-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.vps-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.vps-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 确保表格在移动设备上可以水平滚动 */
+@media (max-width: 1200px) {
+    .vps-table-container {
+        margin: 20px -20px;
+        width: calc(100% + 40px);
+        border-radius: 0;
+    }
 } 
