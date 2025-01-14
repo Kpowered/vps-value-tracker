@@ -4,11 +4,128 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 # 项目配置
 REPO_URL="https://github.com/Kpowered/vps-value-tracker.git"
 PROJECT_DIR="vps-value-tracker"
+
+# 显示菜单
+show_menu() {
+    clear
+    echo -e "${BLUE}VPS Value Tracker 部署工具${NC}"
+    echo "------------------------"
+    echo "1) 安装服务"
+    echo "2) 启动服务"
+    echo "3) 停止服务"
+    echo "4) 重启服务"
+    echo "5) 卸载服务"
+    echo "6) 退出"
+    echo
+    read -p "请选择操作 [1-6]: " choice
+}
+
+# 安装系统依赖
+install_system_dependencies() {
+    local os_type
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        os_type=$ID
+    fi
+
+    case $os_type in
+        "ubuntu"|"debian")
+            sudo apt-get update
+            sudo apt-get install -y curl git
+            ;;
+        "centos"|"rhel"|"fedora")
+            sudo yum install -y curl git
+            ;;
+        *)
+            echo -e "${RED}不支持的操作系统类型${NC}"
+            exit 1
+            ;;
+    esac
+}
+
+# 安装Docker
+install_docker() {
+    echo -e "${YELLOW}正在安装Docker...${NC}"
+    curl -fsSL https://get.docker.com | sh
+    sudo systemctl enable docker
+    sudo systemctl start docker
+    
+    # 添加当前用户到docker组
+    sudo usermod -aG docker $USER
+    
+    echo -e "${GREEN}Docker安装完成${NC}"
+}
+
+# 安装Docker Compose
+install_docker_compose() {
+    echo -e "${YELLOW}正在安装Docker Compose...${NC}"
+    
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    
+    echo -e "${GREEN}Docker Compose安装完成${NC}"
+}
+
+# 检查并安装依赖
+check_and_install_dependencies() {
+    local missing_deps=()
+    
+    # 检查Git
+    if ! command -v git &> /dev/null; then
+        echo -e "${YELLOW}未安装Git${NC}"
+        missing_deps+=("git")
+    fi
+    
+    # 检查Docker
+    if ! command -v docker &> /dev/null; then
+        echo -e "${YELLOW}未安装Docker${NC}"
+        missing_deps+=("docker")
+    fi
+    
+    # 检查Docker Compose
+    if ! command -v docker-compose &> /dev/null; then
+        echo -e "${YELLOW}未安装Docker Compose${NC}"
+        missing_deps+=("docker-compose")
+    fi
+    
+    # 如果有缺失的依赖，询问是否安装
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo -e "${YELLOW}检测到以下依赖未安装：${NC}"
+        printf '%s\n' "${missing_deps[@]}"
+        read -p "是否自动安装这些依赖？(y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            install_system_dependencies
+            
+            for dep in "${missing_deps[@]}"; do
+                case $dep in
+                    "docker")
+                        install_docker
+                        ;;
+                    "docker-compose")
+                        install_docker_compose
+                        ;;
+                esac
+            done
+            
+            echo -e "${GREEN}所有依赖安装完成${NC}"
+            # 提示用户重新登录以应用docker组更改
+            if [[ " ${missing_deps[@]} " =~ " docker " ]]; then
+                echo -e "${YELLOW}请重新登录以使Docker权限生效${NC}"
+                exit 0
+            fi
+        else
+            echo -e "${RED}请手动安装缺失的依赖后再试${NC}"
+            exit 1
+        fi
+    fi
+}
 
 # 检查工作目录
 check_workspace() {
@@ -23,34 +140,6 @@ check_workspace() {
         echo -e "${YELLOW}更新项目代码...${NC}"
         git pull
     fi
-}
-
-# 检查系统要求
-check_requirements() {
-    echo -e "${YELLOW}检查系统要求...${NC}"
-    
-    # 检查Git
-    if ! command -v git &> /dev/null; then
-        echo -e "${RED}未安装Git！${NC}"
-        echo "请先安装Git: https://git-scm.com/downloads"
-        exit 1
-    fi
-    
-    # 检查Docker
-    if ! command -v docker &> /dev/null; then
-        echo -e "${RED}未安装Docker！${NC}"
-        echo "请先安装Docker: https://docs.docker.com/get-docker/"
-        exit 1
-    fi
-    
-    # 检查Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        echo -e "${RED}未安装Docker Compose！${NC}"
-        echo "请先安装Docker Compose: https://docs.docker.com/compose/install/"
-        exit 1
-    fi
-    
-    echo -e "${GREEN}系统要求检查通过${NC}"
 }
 
 # 验证环境变量
@@ -159,35 +248,75 @@ show_help() {
 
 # 主函数
 main() {
-    case "$1" in
-        "install")
-            check_requirements
-            check_workspace
-            setup_env
-            start_services
-            ;;
-        "start")
-            start_services
-            ;;
-        "stop")
-            stop_services
-            ;;
-        "restart")
-            stop_services
-            start_services
-            ;;
-        "uninstall")
-            uninstall
-            ;;
-        "help"|"")
-            show_help
-            ;;
-        *)
-            echo -e "${RED}未知命令: $1${NC}"
-            show_help
-            exit 1
-            ;;
-    esac
+    if [ "$1" ]; then
+        case "$1" in
+            "install")
+                check_and_install_dependencies
+                check_workspace
+                setup_env
+                start_services
+                ;;
+            "start")
+                start_services
+                ;;
+            "stop")
+                stop_services
+                ;;
+            "restart")
+                stop_services
+                start_services
+                ;;
+            "uninstall")
+                uninstall
+                ;;
+            "help"|"")
+                show_help
+                ;;
+            *)
+                echo -e "${RED}未知命令: $1${NC}"
+                show_help
+                exit 1
+                ;;
+        esac
+    else
+        while true; do
+            show_menu
+            case $choice in
+                1)
+                    check_and_install_dependencies
+                    check_workspace
+                    setup_env
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                2)
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                3)
+                    stop_services
+                    read -p "按Enter继续..."
+                    ;;
+                4)
+                    stop_services
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                5)
+                    uninstall
+                    read -p "按Enter继续..."
+                    ;;
+                6)
+                    echo "再见！"
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}无效的选择${NC}"
+                    read -p "按Enter继续..."
+                    ;;
+            esac
+        done
+    fi
 }
 
 # 执行主函数
