@@ -113,132 +113,189 @@ mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
 echo "MySQL root 密码: $MYSQL_ROOT_PASSWORD" > /root/.mysql_root_password
 chmod 600 /root/.mysql_root_password
 
-# 克隆项目
-echo -e "${YELLOW}正在克隆项目...${NC}"
+# 安装 Laravel 安装器
+echo -e "${YELLOW}安装 Laravel 安装器...${NC}"
+composer global require laravel/installer
+
+# 创建 Laravel 项目
+echo -e "${YELLOW}创建 Laravel 项目...${NC}"
 cd /var/www
 if [ -d "vps-value-tracker" ]; then
     echo -e "${YELLOW}删除已存在的项目目录...${NC}"
     rm -rf vps-value-tracker
 fi
-git clone https://github.com/Kpowered/vps-value-tracker.git
+
+composer create-project laravel/laravel vps-value-tracker
 cd vps-value-tracker
 
-# 创建 composer.json
-echo -e "${YELLOW}创建 composer.json...${NC}"
-cat > composer.json << EOF
+# 创建必要的目录和文件
+echo -e "${YELLOW}创建项目文件...${NC}"
+
+# 创建 Models 目录
+mkdir -p app/Models
+
+# 创建 Vps 模型
+cat > app/Models/Vps.php << 'EOF'
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+
+class Vps extends Model
 {
-    "name": "kpowered/vps-value-tracker",
-    "type": "project",
-    "description": "VPS Value Tracker",
-    "keywords": ["vps", "tracker"],
-    "license": "MIT",
-    "require": {
-        "php": "^8.1",
-        "laravel/framework": "^10.0",
-        "laravel/sanctum": "^3.2",
-        "laravel/tinker": "^2.8"
-    },
-    "require-dev": {
-        "fakerphp/faker": "^1.9.1",
-        "laravel/pint": "^1.0",
-        "laravel/sail": "^1.18",
-        "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^7.0",
-        "phpunit/phpunit": "^10.1",
-        "spatie/laravel-ignition": "^2.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\\\": "app/",
-            "Database\\\\Factories\\\\": "database/factories/",
-            "Database\\\\Seeders\\\\": "database/seeders/"
+    protected $fillable = [
+        'vendor_name',
+        'cpu_model',
+        'cpu_cores',
+        'memory_gb',
+        'storage_gb',
+        'bandwidth_gb',
+        'price',
+        'currency',
+        'start_date',
+        'end_date',
+    ];
+
+    protected $dates = [
+        'start_date',
+        'end_date',
+    ];
+
+    public function getRemainingValueAttribute()
+    {
+        $now = Carbon::now();
+        $remainingDays = $now->diffInDays($this->end_date);
+        return $this->price * $remainingDays / 365;
+    }
+
+    public function getRemainingValueCnyAttribute()
+    {
+        $value = $this->remaining_value;
+        if ($this->currency === 'CNY') {
+            return $value;
         }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\\\": "tests/"
+
+        $rate = ExchangeRate::where('currency', $this->currency)->first();
+        if (!$rate) {
+            return null;
         }
-    },
-    "scripts": {
-        "post-autoload-dump": [
-            "Illuminate\\\\Foundation\\\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
-        ],
-        "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
-        ],
-        "post-root-package-install": [
-            "@php -r \\"file_exists('.env') || copy('.env.example', '.env');\""
-        ],
-        "post-create-project-cmd": [
-            "@php artisan key:generate --ansi"
-        ]
-    },
-    "extra": {
-        "laravel": {
-            "dont-discover": []
-        }
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "preferred-install": "dist",
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true
-        }
-    },
-    "minimum-stability": "stable",
-    "prefer-stable": true
+
+        $eurValue = $value / $rate->rate;
+        $cnyRate = ExchangeRate::where('currency', 'CNY')->first();
+        
+        return $eurValue * $cnyRate->rate;
+    }
 }
 EOF
 
-# 创建 .env 文件
-echo -e "${YELLOW}创建 .env 文件...${NC}"
-cat > .env << EOF
-APP_NAME="VPS Value Tracker"
-APP_ENV=production
-APP_KEY=
-APP_DEBUG=false
-APP_URL=http://${domain:-localhost}
+# 创建 ExchangeRate 模型
+cat > app/Models/ExchangeRate.php << 'EOF'
+<?php
 
-LOG_CHANNEL=stack
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
+namespace App\Models;
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=${dbname}
-DB_USERNAME=${dbuser}
-DB_PASSWORD=${dbpass}
+use Illuminate\Database\Eloquent\Model;
 
-BROADCAST_DRIVER=log
-CACHE_DRIVER=file
-FILESYSTEM_DISK=local
-QUEUE_CONNECTION=sync
-SESSION_DRIVER=file
-SESSION_LIFETIME=120
+class ExchangeRate extends Model
+{
+    public $timestamps = false;
+    
+    protected $fillable = [
+        'currency',
+        'rate',
+        'updated_at'
+    ];
 
-FIXER_API_KEY=9fc7824eeb86c023e2ba423a80f17f9b
+    protected $dates = [
+        'updated_at'
+    ];
+}
 EOF
 
-# 创建必要的目录
-mkdir -p storage/framework/{sessions,views,cache}
-mkdir -p storage/logs
-mkdir -p bootstrap/cache
-mkdir -p database/migrations
+# 创建 VpsController
+mkdir -p app/Http/Controllers
+cat > app/Http/Controllers/VpsController.php << 'EOF'
+<?php
 
-# 复制迁移文件
-cp database/migrations/create_vps_table.php database/migrations/2024_01_14_000001_create_vps_table.php
-cp database/migrations/2024_03_xx_create_exchange_rates_table.php database/migrations/2024_01_14_000002_create_exchange_rates_table.php
+namespace App\Http\Controllers;
 
-# 安装依赖
-echo -e "${YELLOW}安装依赖...${NC}"
-composer install --no-dev --no-interaction
+use App\Models\Vps;
+use Illuminate\Http\Request;
+use Carbon\Carbon;
 
-# 生成应用密钥
-php artisan key:generate
+class VpsController extends Controller
+{
+    public function index()
+    {
+        $vpsList = Vps::all();
+        return view('vps.index', compact('vpsList'));
+    }
+
+    public function create()
+    {
+        return view('vps.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'vendor_name' => 'required',
+            'cpu_model' => 'required',
+            'cpu_cores' => 'required|integer',
+            'memory_gb' => 'required|integer',
+            'storage_gb' => 'required|integer',
+            'bandwidth_gb' => 'required|integer',
+            'price' => 'required|numeric',
+            'currency' => 'required|size:3',
+        ]);
+
+        $validated['start_date'] = Carbon::now();
+        $validated['end_date'] = Carbon::now()->addYear();
+
+        Vps::create($validated);
+
+        return redirect()->route('vps.index')->with('success', 'VPS added successfully');
+    }
+
+    public function destroy(Vps $vps)
+    {
+        $vps->delete();
+        return redirect()->route('vps.index')->with('success', 'VPS deleted successfully');
+    }
+}
+EOF
+
+# 创建视图目录
+mkdir -p resources/views/vps
+
+# 创建视图文件
+cat > resources/views/vps/index.blade.php << 'EOF'
+@extends('layouts.app')
+
+@section('content')
+<!-- ... (使用之前提供的 index.blade.php 内容) ... -->
+EOF
+
+cat > resources/views/vps/create.blade.php << 'EOF'
+@extends('layouts.app')
+
+@section('content')
+<!-- ... (使用之前提供的 create.blade.php 内容) ... -->
+EOF
+
+# 更新 .env 文件
+sed -i "s/APP_NAME=.*/APP_NAME=\"VPS Value Tracker\"/" .env
+sed -i "s/APP_ENV=.*/APP_ENV=production/" .env
+sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" .env
+sed -i "s/APP_URL=.*/APP_URL=http:\/\/${domain:-localhost}/" .env
+sed -i "s/DB_DATABASE=.*/DB_DATABASE=${dbname}/" .env
+sed -i "s/DB_USERNAME=.*/DB_USERNAME=${dbuser}/" .env
+sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${dbpass}/" .env
+
+# 添加 Fixer API key
+echo "FIXER_API_KEY=9fc7824eeb86c023e2ba423a80f17f9b" >> .env
 
 # 设置目录权限
 chown -R www-data:www-data /var/www/vps-value-tracker
