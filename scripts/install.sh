@@ -116,23 +116,128 @@ chmod 600 /root/.mysql_root_password
 # 克隆项目
 echo -e "${YELLOW}正在克隆项目...${NC}"
 cd /var/www
+if [ -d "vps-value-tracker" ]; then
+    echo -e "${YELLOW}删除已存在的项目目录...${NC}"
+    rm -rf vps-value-tracker
+fi
 git clone https://github.com/Kpowered/vps-value-tracker.git
 cd vps-value-tracker
+
+# 创建 composer.json
+echo -e "${YELLOW}创建 composer.json...${NC}"
+cat > composer.json << EOF
+{
+    "name": "kpowered/vps-value-tracker",
+    "type": "project",
+    "description": "VPS Value Tracker",
+    "keywords": ["vps", "tracker"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0",
+        "laravel/sanctum": "^3.2",
+        "laravel/tinker": "^2.8"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.9.1",
+        "laravel/pint": "^1.0",
+        "laravel/sail": "^1.18",
+        "mockery/mockery": "^1.4.4",
+        "nunomaduro/collision": "^7.0",
+        "phpunit/phpunit": "^10.1",
+        "spatie/laravel-ignition": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\\\": "app/",
+            "Database\\\\Factories\\\\": "database/factories/",
+            "Database\\\\Seeders\\\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\\\Foundation\\\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \\"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
+EOF
+
+# 创建 .env 文件
+echo -e "${YELLOW}创建 .env 文件...${NC}"
+cat > .env << EOF
+APP_NAME="VPS Value Tracker"
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=http://${domain:-localhost}
+
+LOG_CHANNEL=stack
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=${dbname}
+DB_USERNAME=${dbuser}
+DB_PASSWORD=${dbpass}
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+FIXER_API_KEY=9fc7824eeb86c023e2ba423a80f17f9b
+EOF
 
 # 创建必要的目录
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
+mkdir -p database/migrations
 
-# 配置项目
-echo -e "${YELLOW}正在配置项目...${NC}"
-cp .env.example .env
-sed -i "s/DB_DATABASE=.*/DB_DATABASE=${dbname}/" .env
-sed -i "s/DB_USERNAME=.*/DB_USERNAME=${dbuser}/" .env
-sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${dbpass}/" .env
+# 复制迁移文件
+cp database/migrations/create_vps_table.php database/migrations/2024_01_14_000001_create_vps_table.php
+cp database/migrations/2024_03_xx_create_exchange_rates_table.php database/migrations/2024_01_14_000002_create_exchange_rates_table.php
 
 # 安装依赖
-composer install --no-dev
+echo -e "${YELLOW}安装依赖...${NC}"
+composer install --no-dev --no-interaction
+
+# 生成应用密钥
 php artisan key:generate
 
 # 设置目录权限
@@ -141,7 +246,7 @@ chmod -R 755 /var/www/vps-value-tracker
 chmod -R 775 storage bootstrap/cache
 
 # 运行数据库迁移
-php artisan migrate
+php artisan migrate --force
 
 # 创建管理员账户
 echo -e "${YELLOW}创建管理员账户${NC}"
