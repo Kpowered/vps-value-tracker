@@ -3,11 +3,11 @@ import { body, validationResult } from 'express-validator';
 
 export const validateVPS = [
   body('provider').notEmpty().trim(),
-  body('price').isNumeric(),
+  body('price').isFloat({ min: 0 }),
   body('currency').isIn(['CNY', 'USD', 'EUR', 'GBP', 'CAD', 'JPY']),
   body('cpu.cores').isInt({ min: 1 }),
   body('cpu.model').notEmpty().trim(),
-  body('memory.size').isNumeric({ min: 0.5 }),
+  body('memory.size').isFloat({ min: 0.5 }),
   body('storage.size').isInt({ min: 1 }),
   body('bandwidth.amount').isInt({ min: 1 }),
   

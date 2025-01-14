@@ -10,24 +10,15 @@
 - 💰 自动计算剩余价值
 - 🔄 自动汇率转换（使用 fixer.io API）
 - 📱 响应式设计，支持移动端
-- 🐳 Docker 一键部署
+- �� Docker 一键部署
 
-## 快速开始
+## 快速部署
 
-### 使用部署脚本
+使用以下命令一键部署：
 
-1. 下载部署脚本并添加执行权限：
 ```bash
-wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/deploy.sh
-chmod +x deploy.sh
+curl -fsSL https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/deploy.sh | bash -s -- deploy
 ```
-
-2. 运行脚本：
-```bash
-./deploy.sh
-```
-
-3. 在菜单中选择"部署服务"选项
 
 ### 默认账号
 - 用户名：admin
