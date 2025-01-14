@@ -151,98 +151,126 @@ php artisan make:admin
 echo -e "${YELLOW}正在配置Nginx...${NC}"
 read -p "请输入域名 (如果没有请直接回车): " domain
 
-# 删除默认的 Nginx 配置
+# 删除所有默认和可能冲突的配置
 rm -f /etc/nginx/sites-enabled/default
+rm -f /etc/nginx/sites-enabled/vps-tracker
+rm -f /etc/nginx/sites-available/vps-tracker
+rm -f /etc/nginx/conf.d/*.conf
+
+# 确保目录存在
+mkdir -p /etc/nginx/sites-available
+mkdir -p /etc/nginx/sites-enabled
 
 if [ -n "$domain" ]; then
     # 配置带域名的Nginx配置
     cat > /etc/nginx/sites-available/vps-tracker << EOF
 server {
     listen 80;
+    listen [::]:80;
     server_name ${domain};
+    
+    # SSL 配置将由 certbot 自动添加
+    
     root /var/www/vps-value-tracker/public;
-
+    index index.php;
+    
+    charset utf-8;
+    
+    # 安全头部
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
-
-    index index.php;
-
-    charset utf-8;
-
+    add_header X-XSS-Protection "1; mode=block";
+    
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
-
+    
     location = /favicon.ico { access_log off; log_not_found off; }
     location = /robots.txt  { access_log off; log_not_found off; }
-
+    
     error_page 404 /index.php;
-
+    
     location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+        fastcgi_index index.php;
         include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
     }
-
+    
     location ~ /\.(?!well-known).* {
         deny all;
     }
 }
 EOF
-
-    # 启用站点配置
-    ln -s /etc/nginx/sites-available/vps-tracker /etc/nginx/sites-enabled/
-    
-    # 配置SSL
-    echo -e "${YELLOW}正在配置SSL...${NC}"
-    certbot --nginx -d ${domain} --non-interactive --agree-tos --email admin@${domain}
 else
     # 配置不带域名的Nginx配置
     cat > /etc/nginx/sites-available/vps-tracker << EOF
 server {
     listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    
     root /var/www/vps-value-tracker/public;
-
+    index index.php;
+    
+    charset utf-8;
+    
+    # 安全头部
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
-
-    index index.php;
-
-    charset utf-8;
-
+    add_header X-XSS-Protection "1; mode=block";
+    
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
-
+    
     location = /favicon.ico { access_log off; log_not_found off; }
     location = /robots.txt  { access_log off; log_not_found off; }
-
+    
     error_page 404 /index.php;
-
+    
     location ~ \.php$ {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
+        fastcgi_index index.php;
         include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param PATH_INFO \$fastcgi_path_info;
     }
-
+    
     location ~ /\.(?!well-known).* {
         deny all;
     }
 }
 EOF
-
-    ln -s /etc/nginx/sites-available/vps-tracker /etc/nginx/sites-enabled/
 fi
+
+# 创建符号链接
+ln -sf /etc/nginx/sites-available/vps-tracker /etc/nginx/sites-enabled/
 
 # 测试 Nginx 配置
 nginx -t
 
+# 如果配置测试成功，重启 Nginx
+if [ $? -eq 0 ]; then
+    systemctl restart nginx
+else
+    echo -e "${RED}Nginx 配置测试失败${NC}"
+    exit 1
+fi
+
+# 如果指定了域名，配置 SSL
+if [ -n "$domain" ]; then
+    echo -e "${YELLOW}正在配置SSL...${NC}"
+    certbot --nginx -d ${domain} --non-interactive --agree-tos --email admin@${domain} || {
+        echo -e "${RED}SSL 配置失败，但网站仍可通过 HTTP 访问${NC}"
+    }
+fi
+
 # 配置定时任务
 echo "* * * * * cd /var/www/vps-value-tracker && php artisan schedule:run >> /dev/null 2>&1" | crontab -
-
-# 重启服务
-systemctl restart nginx
-systemctl restart php8.1-fpm
 
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
