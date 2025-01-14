@@ -258,13 +258,13 @@ class VpsController extends Controller
 
         Vps::create($validated);
 
-        return redirect()->route('home')->with('success', 'VPS added successfully');
+        return redirect()->route('vps.index')->with('success', 'VPS added successfully');
     }
 
     public function destroy(Vps $vps)
     {
         $vps->delete();
-        return redirect()->route('home')->with('success', 'VPS deleted successfully');
+        return redirect()->route('vps.index')->with('success', 'VPS deleted successfully');
     }
 }
 EOF
@@ -716,10 +716,16 @@ cat > routes/web.php << 'EOF'
 use App\Http\Controllers\VpsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [VpsController::class, 'index'])->name('home');
+Route::get('/', function () {
+    return redirect()->route('vps.index');
+});
+
+Route::get('/vps', [VpsController::class, 'index'])->name('vps.index');
 
 Route::middleware(['auth'])->group(function () {
-    Route::resource('vps', VpsController::class)->except(['index', 'show']);
+    Route::get('/vps/create', [VpsController::class, 'create'])->name('vps.create');
+    Route::post('/vps', [VpsController::class, 'store'])->name('vps.store');
+    Route::delete('/vps/{vps}', [VpsController::class, 'destroy'])->name('vps.destroy');
 });
 
 require __DIR__.'/auth.php';
