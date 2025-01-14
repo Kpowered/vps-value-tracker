@@ -1,185 +1,206 @@
-# VPS Value Tracker
+# VPS 剩余价值展示器
 
-VPS Value Tracker 是一个帮助追踪和管理 VPS 服务器价值的工具。它可以记录不同供应商的 VPS 配置和价格，并自动计算剩余价值。
-
-这是一个纯 RESTful API 服务，您可以：
-- 直接调用 API
-- 使用 Postman 等工具测试
-- 开发自己的前端界面
+一个用于展示和管理 VPS 剩余价值的全栈应用，支持多币种、自动汇率转换和 Docker 部署。
 
 ## 功能特点
 
-- 多货币支持（CNY、USD、EUR、GBP、CAD、JPY）
-- 自动汇率转换
-- VPS 配置管理
-- 剩余价值计算
-- JWT 认证
-- Docker 部署支持
+### 核心功能
+- 🔐 管理员认证系统
+- 📊 VPS 信息展示
+- 💰 自动计算剩余价值
+- 🌏 多币种支持（CNY, USD, EUR, GBP, CAD, JPY）
+- 💱 自动汇率转换（基于 fixer.io）
+
+### VPS 信息管理
+- 价格：多币种自动转换
+- 配置：标准化的配置信息录入
+- 时间：自动计算剩余时间
+- 价值：基于剩余时间的价值计算
+
+### 数据录入规范
+- CPU：核心数量 + 型号
+- 内存：容量 + 型号
+- 硬盘：容量 + 类型
+- 带宽：流量 + 类型
 
 ## 快速开始
 
-### 前置要求
+### 环境要求
+- Docker & Docker Compose
+- Linux 系统（推荐 Ubuntu/Debian）
+- 域名（可选，用于 SSL）
 
-- Docker
-- Docker Compose
+### Docker 部署
 
-### 安装步骤
+1. 克隆仓库
 
-1. 克隆项目
-```bash
-git clone https://github.com/Kpowered/vps-value-tracker.git
-cd vps-value-tracker
-```
+    <?>bash
+    git clone https://github.com/yourusername/vps-value-tracker.git
+    cd vps-value-tracker
+    <?>
 
 2. 配置环境变量
-```bash
-cp .env.example .env
-```
-根据需要修改 .env 文件中的配置：
-- MONGO_USER: MongoDB 用户名（默认：admin）
-- MONGO_PASSWORD: MongoDB 密码（默认：admin123456）
-- JWT_SECRET: JWT 密钥
-- FIXER_API_KEY: Fixer.io API 密钥（用于汇率转换）
 
-3. 启动服务
-```bash
-docker-compose up -d
-```
+    <?>bash
+    cp .env.example .env
+    <?>
 
-### 默认账号
+    编辑 .env 文件：
+    <?>ini
+    MONGO_USER=admin
+    MONGO_PASSWORD=your_secure_password
+    JWT_SECRET=your_jwt_secret_key
+    <?>
 
-- 用户名：admin
-- 密码：admin123456
+3. 运行部署脚本
+
+    <?>bash
+    chmod +x deploy.sh
+    ./deploy.sh
+    <?>
+
+    按照提示完成配置：
+    - SSL 证书配置（可选）
+    - 域名设置（如果启用 SSL）
+    - 开机自启动（可选）
+
+### 开发环境设置
+
+1. 安装依赖
+
+    <?>bash
+    # 后端
+    cd backend
+    npm install
+
+    # 前端
+    cd ../frontend
+    npm install
+    <?>
+
+2. 启动开发服务器
+
+    <?>bash
+    # 后端（端口 3000）
+    cd backend
+    npm run dev
+
+    # 前端（端口 3001）
+    cd frontend
+    npm start
+    <?>
 
 ## API 文档
 
-### 认证
+### 认证接口
 
-```
+#### 创建管理员
+<?>http
+POST /api/auth/admin
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "your-password"
+}
+<?>
+
+#### 管理员登录
+<?>http
 POST /api/auth/login
 Content-Type: application/json
 
 {
     "username": "admin",
-    "password": "admin123456"
+    "password": "your-password"
 }
-```
+<?>
 
-### VPS 管理
+### VPS 管理接口
 
-```
-# 获取所有 VPS
-GET /api/vps
-
-# 创建 VPS
+#### 创建 VPS
+<?>http
 POST /api/vps
 Authorization: Bearer <token>
+Content-Type: application/json
 
-# 更新 VPS
-PUT /api/vps/:id
-Authorization: Bearer <token>
-
-# 删除 VPS
-DELETE /api/vps/:id
-Authorization: Bearer <token>
-```
-
-### VPS 数据格式
-
-```json
 {
-    "merchantName": "Vultr",
+    "name": "VPS名称",
+    "provider": "服务商",
+    "location": "地区",
+    "price": 100,
+    "currency": "USD",
+    "endDate": "2024-12-31",
     "cpu": {
-        "cores": 1,
+        "cores": 2,
         "model": "Intel Xeon"
     },
     "memory": {
-        "size": 1024,
-        "type": "MB"
+        "size": 4,
+        "type": "DDR4"
     },
     "storage": {
-        "size": 25,
-        "type": "GB"
+        "size": 50,
+        "type": "SSD"
     },
     "bandwidth": {
-        "size": 1000,
+        "amount": 1000,
         "type": "GB"
-    },
-    "price": {
-        "amount": 5,
-        "currency": "USD"
     }
 }
-```
+<?>
 
-## 开发指南
+#### 获取 VPS 列表
+<?>http
+GET /api/vps
+<?>
 
-### 项目结构
-```
-vps-value-tracker/
-├── backend/
-│   ├── cmd/
-│   ├── configs/
-│   ├── internal/
-│   │   ├── api/
-│   │   ├── config/
-│   │   ├── db/
-│   │   ├── middleware/
-│   │   ├── model/
-│   │   ├── service/
-│   │   ├── utils/
-│   │   └── validator/
-│   └── Dockerfile
-├── docker-compose.yml
-└── .env.example
-```
+## 部署说明
 
-### 本地开发
+### Docker 服务
+- MongoDB：数据存储
+- Redis：汇率缓存
+- Nginx：反向代理
+- Node.js：后端服务
+- React：前端应用
 
-1. 启动数据库
-```bash
-docker-compose up mongodb -d
-```
+### 环境变量
+- `MONGO_USER`：MongoDB 用户名
+- `MONGO_PASSWORD`：MongoDB 密码
+- `JWT_SECRET`：JWT 密钥
+- `REDIS_HOST`：Redis 地址
+- `REDIS_PORT`：Redis 端口
+- `PORT`：应用端口（默认 3000）
 
-2. 启动后端
-```bash
-cd backend
-go run cmd/server/main.go
-```
+### SSL 配置
+- 自动申请 Let's Encrypt 证书
+- 支持 HTTPS 访问
+- 自动续期证书
 
-## 部署
+## 技术栈
 
-### 使用 Docker Compose（推荐）
+### 后端
+- Node.js + Express
+- TypeScript
+- MongoDB
+- Redis
+- JWT 认证
 
-```bash
-docker-compose up -d
-```
+### 前端
+- React
+- TypeScript
+- Ant Design
 
-### 手动部署
-
-1. 配置 MongoDB
-2. 构建并运行后端
-3. 配置 Nginx
-
-## 注意事项
-
-- 请确保修改默认的管理员密码
-- 在生产环境中使用强密码和安全的 JWT 密钥
-- 定期备份 MongoDB 数据
-- 使用 HTTPS 保护 API 通信
+### 部署
+- Docker & Docker Compose
+- Nginx
+- Let's Encrypt SSL
 
 ## 许可证
 
-MIT License
+MIT License - 详见 [LICENSE](LICENSE) 文件
 
-## 贡献指南
+## 联系方式
 
-1. Fork 项目
-2. 创建特性分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
-
-## 问题反馈
-
-如果您发现任何问题或有改进建议，请创建 Issue。
+- 项目地址：[GitHub](https://github.com/yourusername/vps-value-tracker)
+- 问题反馈：请使用 GitHub Issues 
