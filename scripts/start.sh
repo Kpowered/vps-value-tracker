@@ -10,11 +10,14 @@ echo "MongoDB is ready"
 # 初始化数据库
 echo "Initializing database..."
 node -e "
-const { initDatabase } = require('./scripts/init-db');
+const { initDatabase } = require('./scripts/init-db.js');
+if (!process.env.ADMIN_PASSWORD) {
+    console.error('ADMIN_PASSWORD environment variable is not set');
+    process.exit(1);
+}
 initDatabase(process.env.ADMIN_PASSWORD)
   .then(() => {
     console.log('Database initialized');
-    // 启动应用
     console.log('Starting application...');
     require('child_process').execSync('npm start', { stdio: 'inherit' });
   })

@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import * as bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
-async function initDatabase(adminPassword: string) {
+export async function initDatabase(adminPassword: string) {
   try {
     console.log('Starting database initialization...')
     
@@ -50,6 +50,4 @@ async function initDatabase(adminPassword: string) {
   } finally {
     await prisma.$disconnect()
   }
-}
-
-export { initDatabase } 
+} 

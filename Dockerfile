@@ -13,6 +13,10 @@ RUN npm install
 # 复制源代码
 COPY . .
 
+# 编译 TypeScript 文件
+RUN npm install -g typescript
+RUN tsc scripts/init-db.ts --outDir dist/scripts --esModuleInterop true
+
 # 生成Prisma客户端
 RUN npx prisma generate
 
@@ -32,13 +36,13 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/dist/scripts ./scripts
+COPY --from=builder /app/scripts/start.sh ./
 
 # 设置环境变量
 ENV NODE_ENV=production
 
-# 添加启动脚本
-COPY scripts/start.sh ./
+# 添加执行权限
 RUN chmod +x start.sh
 
 EXPOSE 3000
