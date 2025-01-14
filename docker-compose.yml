@@ -4,8 +4,12 @@ services:
   mongodb:
     image: mongo:4.4
     container_name: vps-tracker-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-admin123456}
     volumes:
       - mongodb_data:/data/db
+      - ./backend/scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     ports:
       - "27017:27017"
     networks:
@@ -17,11 +21,15 @@ services:
       dockerfile: Dockerfile
     container_name: vps-tracker-backend
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/vps-tracker
+      - MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-admin123456}@mongodb:27017/vps-tracker?authSource=admin
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - FIXER_API_KEY=${FIXER_API_KEY}
     depends_on:
       - mongodb
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend/configs:/app/configs
     networks:
       - vps-network
 
@@ -30,6 +38,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: vps-tracker-frontend
+    environment:
+      - API_URL=http://backend:3000
     ports:
       - "80:80"
     depends_on:
