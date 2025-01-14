@@ -241,14 +241,14 @@ class VpsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'vendor_name' => 'required',
-            'cpu_model' => 'required',
-            'cpu_cores' => 'required|integer',
-            'memory_gb' => 'required|integer',
-            'storage_gb' => 'required|integer',
-            'bandwidth_gb' => 'required|integer',
-            'price' => 'required|numeric',
-            'currency' => 'required|size:3',
+            'vendor_name' => 'required|string|max:255',
+            'cpu_model' => 'required|string|max:255',
+            'cpu_cores' => 'required|integer|min:1',
+            'memory_gb' => 'required|integer|min:1',
+            'storage_gb' => 'required|integer|min:1',
+            'bandwidth_gb' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',
+            'currency' => 'required|string|size:3',
         ]);
 
         $validated['start_date'] = Carbon::now();
@@ -256,13 +256,13 @@ class VpsController extends Controller
 
         Vps::create($validated);
 
-        return redirect()->route('vps.index')->with('success', 'VPS added successfully');
+        return redirect()->route('home')->with('success', 'VPS added successfully');
     }
 
     public function destroy(Vps $vps)
     {
         $vps->delete();
-        return redirect()->route('vps.index')->with('success', 'VPS deleted successfully');
+        return redirect()->route('home')->with('success', 'VPS deleted successfully');
     }
 }
 EOF
@@ -390,6 +390,90 @@ cat > resources/views/vps/index.blade.php << 'EOF'
             </tbody>
         </table>
     </div>
+</div>
+@endsection
+EOF
+
+# 创建 create 视图
+cat > resources/views/vps/create.blade.php << 'EOF'
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Add New VPS</h2>
+
+    <form method="POST" action="{{ route('vps.store') }}">
+        @csrf
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="mb-4">
+                <label for="vendor_name" class="block text-gray-700 mb-2">Vendor Name</label>
+                <input type="text" name="vendor_name" id="vendor_name" 
+                    class="form-input w-full rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="cpu_model" class="block text-gray-700 mb-2">CPU Model</label>
+                <input type="text" name="cpu_model" id="cpu_model" 
+                    class="form-input w-full rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="cpu_cores" class="block text-gray-700 mb-2">CPU Cores</label>
+                <select name="cpu_cores" id="cpu_cores" class="form-select w-full rounded" required>
+                    @for($i = 1; $i <= 32; $i++)
+                        <option value="{{ $i }}">{{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="memory_gb" class="block text-gray-700 mb-2">Memory (GB)</label>
+                <select name="memory_gb" id="memory_gb" class="form-select w-full rounded" required>
+                    @foreach([1, 2, 4, 8, 16, 32, 64, 128] as $size)
+                        <option value="{{ $size }}">{{ $size }} GB</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="storage_gb" class="block text-gray-700 mb-2">Storage (GB)</label>
+                <input type="number" name="storage_gb" id="storage_gb" 
+                    class="form-input w-full rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="bandwidth_gb" class="block text-gray-700 mb-2">Bandwidth (GB)</label>
+                <input type="number" name="bandwidth_gb" id="bandwidth_gb" 
+                    class="form-input w-full rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="price" class="block text-gray-700 mb-2">Price (per year)</label>
+                <input type="number" step="0.01" name="price" id="price" 
+                    class="form-input w-full rounded" required>
+            </div>
+
+            <div class="mb-4">
+                <label for="currency" class="block text-gray-700 mb-2">Currency</label>
+                <select name="currency" id="currency" class="form-select w-full rounded" required>
+                    <option value="CNY">CNY - Chinese Yuan</option>
+                    <option value="USD">USD - US Dollar</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="JPY">JPY - Japanese Yen</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Add VPS
+            </button>
+            <a href="{{ route('home') }}" class="ml-2 text-gray-600 hover:text-gray-800">
+                Cancel
+            </a>
+        </div>
+    </form>
 </div>
 @endsection
 EOF
@@ -554,7 +638,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateVpsTable extends Migration
+return new class extends Migration
 {
     public function up()
     {
@@ -568,7 +652,7 @@ class CreateVpsTable extends Migration
             $table->integer('bandwidth_gb');
             $table->decimal('price', 10, 2);
             $table->string('currency', 3);
-            $table->timestamp('start_date')->useCurrent();
+            $table->timestamp('start_date');
             $table->timestamp('end_date');
             $table->timestamps();
         });
@@ -578,7 +662,7 @@ class CreateVpsTable extends Migration
     {
         Schema::dropIfExists('vps');
     }
-}
+};
 EOF
 
 # 汇率表迁移
