@@ -36,9 +36,43 @@ echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.
 
 # 添加 MySQL 仓库
 echo -e "${YELLOW}添加 MySQL 仓库...${NC}"
-curl -sSLo mysql-apt-config.deb https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb
-DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config.deb
-rm mysql-apt-config.deb
+wget https://repo.mysql.com/mysql-apt-config_0.8.24-1_all.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb
+apt-get update
+
+# 安装 MySQL
+echo -e "${YELLOW}安装 MySQL...${NC}"
+DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-community-server
+
+# 确保 MySQL 服务启动
+echo -e "${YELLOW}启动 MySQL 服务...${NC}"
+systemctl enable mysql || systemctl enable mysqld
+systemctl start mysql || systemctl start mysqld
+
+# 等待 MySQL 启动
+echo -e "${YELLOW}等待 MySQL 启动...${NC}"
+while ! mysqladmin ping -s; do
+    sleep 1
+done
+
+# 设置 MySQL root 密码
+echo -e "${YELLOW}配置 MySQL...${NC}"
+MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+
+# 尝试不同的 MySQL 密码设置方法
+if mysql -u root -e "SELECT 1;" 2>/dev/null; then
+    # MySQL 没有密码，直接设置
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+else
+    # 尝试使用 mysqladmin
+    mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
+fi
+
+# 验证 MySQL 连接
+if ! mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" 2>/dev/null; then
+    echo -e "${RED}MySQL 配置失败${NC}"
+    exit 1
+fi
 
 # 添加 Nginx 仓库
 echo -e "${YELLOW}添加 Nginx 仓库...${NC}"
@@ -47,10 +81,6 @@ echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx
 
 # 更新软件包列表
 apt-get update
-
-# 安装 MySQL
-echo -e "${YELLOW}安装 MySQL...${NC}"
-DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
 
 # 安装 PHP 和其他依赖
 echo -e "${YELLOW}安装 PHP 和其他依赖...${NC}"
@@ -61,15 +91,6 @@ apt-get install -y nginx php8.1-fpm php8.1-mysql php8.1-mbstring \
 # 确保 PHP-FPM 服务存在并启动
 systemctl enable php8.1-fpm
 systemctl start php8.1-fpm
-
-# 确保 MySQL 服务启动
-systemctl enable mysql
-systemctl start mysql
-
-# 设置MySQL root密码
-echo -e "${YELLOW}配置 MySQL...${NC}"
-MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
-mysql --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
 
 # 创建数据库和用户
 read -p "请输入数据库名称 (默认: vps_tracker): " dbname
