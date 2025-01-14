@@ -35,7 +35,9 @@
 - Axios
 
 ### 后端
-- Node.js + Express
+- Go 1.21+
+- Gin Web Framework
+- GORM
 - MongoDB
 - JWT认证
 - Fixer.io API
@@ -43,7 +45,7 @@
 ## 快速开始
 
 ### 环境要求
-- Node.js 14+
+- Go 1.21+
 - MongoDB 4+
 
 ### 脚本安装（推荐）
@@ -107,14 +109,23 @@ vps-value-tracker/
 │   │   ├── router/       # 路由配置
 │   │   └── api/          # API调用
 │   └── vite.config.js    # Vite配置
-├── backend/           # Express后端项目
-│   ├── src/
-│   │   ├── routes/       # API路由
-│   │   ├── models/       # 数据模型
-│   │   ├── controllers/  # 控制器
-│   │   └── services/     # 服务层
-│   └── package.json
-└── docker-compose.yml # Docker配置
+├── backend/           # Go后端项目
+│   ├── cmd/
+│   │   └── server/     # 主程序入口
+│   ├── internal/
+│   │   ├── api/        # API处理
+│   │   ├── model/      # 数据模型
+│   │   ├── service/    # 业务逻辑
+│   │   └── config/     # 配置管理
+│   ├── pkg/
+│   │   ├── middleware/ # 中间件
+│   │   └── utils/      # 工具函数
+│   └── go.mod
+├── scripts/          # 部署脚本
+│   └── deploy.sh     # 一键部署脚本
+└── configs/          # 配置文件
+    ├── app.yaml      # 应用配置
+    └── nginx.conf    # Nginx配置模板
 ```
 
 ## API接口
