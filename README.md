@@ -34,30 +34,30 @@
 
 1. 克隆仓库
 
-    <?>bash
+    ```bash
     git clone https://github.com/yourusername/vps-value-tracker.git
     cd vps-value-tracker
-    <?>
+    ```
 
 2. 配置环境变量
 
-    <?>bash
+    ```bash
     cp .env.example .env
-    <?>
+    ```
 
     编辑 .env 文件：
-    <?>ini
+    ```ini
     MONGO_USER=admin
     MONGO_PASSWORD=your_secure_password
     JWT_SECRET=your_jwt_secret_key
-    <?>
+    ```
 
 3. 运行部署脚本
 
-    <?>bash
+    ```bash
     chmod +x deploy.sh
     ./deploy.sh
-    <?>
+    ```
 
     按照提示完成配置：
     - SSL 证书配置（可选）
@@ -68,7 +68,7 @@
 
 1. 安装依赖
 
-    <?>bash
+    ```bash
     # 后端
     cd backend
     npm install
@@ -76,11 +76,11 @@
     # 前端
     cd ../frontend
     npm install
-    <?>
+    ```
 
 2. 启动开发服务器
 
-    <?>bash
+    ```bash
     # 后端（端口 3000）
     cd backend
     npm run dev
@@ -88,14 +88,14 @@
     # 前端（端口 3001）
     cd frontend
     npm start
-    <?>
+    ```
 
 ## API 文档
 
 ### 认证接口
 
 #### 创建管理员
-<?>http
+```http
 POST /api/auth/admin
 Content-Type: application/json
 
@@ -103,10 +103,10 @@ Content-Type: application/json
     "username": "admin",
     "password": "your-password"
 }
-<?>
+```
 
 #### 管理员登录
-<?>http
+```http
 POST /api/auth/login
 Content-Type: application/json
 
@@ -114,12 +114,12 @@ Content-Type: application/json
     "username": "admin",
     "password": "your-password"
 }
-<?>
+```
 
 ### VPS 管理接口
 
 #### 创建 VPS
-<?>http
+```http
 POST /api/vps
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -148,12 +148,12 @@ Content-Type: application/json
         "type": "GB"
     }
 }
-<?>
+```
 
 #### 获取 VPS 列表
-<?>http
+```http
 GET /api/vps
-<?>
+```
 
 ## 部署说明
 
