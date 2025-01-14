@@ -45,66 +45,28 @@
 ### 环境要求
 - Node.js 14+
 - MongoDB 4+
-- Docker (可选)
 
 ### 脚本安装（推荐）
 
-1. 下载安装脚本
+1. 一键安装并运行
 
     ```bash
-    curl -O https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/scripts/deploy.sh && chmod +x deploy.sh && ./deploy.sh install
+    curl -O https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/scripts/deploy.sh && chmod +x deploy.sh && ./deploy.sh
     ```
 
-2. 运行安装
+2. 在交互菜单中选择操作：
+    - 1) 安装服务
+    - 2) 启动服务
+    - 3) 停止服务
+    - 4) 重启服务
+    - 5) 卸载服务
+    - 6) 退出
 
-    ```bash
-    ./deploy.sh install
-    ```
-
-3. 配置环境变量
+3. 首次安装后配置环境变量：
 
     ```bash
     # 编辑.env文件，设置必要的环境变量
     vim .env
-    ```
-
-4. 启动服务
-
-    ```bash
-    ./deploy.sh start
-    ```
-
-其他常用命令：
-```bash
-./deploy.sh stop      # 停止服务
-./deploy.sh restart   # 重启服务
-./deploy.sh uninstall # 卸载服务
-./deploy.sh help      # 显示帮助信息
-```
-
-### Docker部署
-
-1. 克隆项目
-
-    ```bash
-    git clone https://github.com/Kpowered/vps-value-tracker.git
-    cd vps-value-tracker
-    ```
-
-2. 配置环境变量
-
-    ```bash
-    cp .env.example .env
-    # 编辑.env文件，设置以下必要的环境变量：
-    # - MONGODB_URI
-    # - JWT_SECRET
-    # - FIXER_API_KEY
-    ```
-
-3. 启动服务
-
-    ```bash
-    docker-compose up -d
     ```
 
 ### 手动部署
