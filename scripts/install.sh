@@ -286,7 +286,7 @@ cat > resources/views/layouts/app.blade.php << 'EOF'
     <nav class="bg-white shadow mb-4">
         <div class="container mx-auto px-4 py-4">
             <div class="flex justify-between">
-                <a href="{{ route('home') }}" class="text-xl font-bold">VPS Value Tracker</a>
+                <a href="{{ route('vps.index') }}" class="text-xl font-bold">VPS Value Tracker</a>
                 @auth
                     <div>
                         <a href="{{ route('vps.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add VPS</a>
@@ -538,20 +538,15 @@ if [ -n "$domain" ]; then
     cat > /etc/nginx/sites-available/vps-tracker << EOF
 server {
     listen 80;
-    listen [::]:80;
-    server_name ${domain};
-    
-    # SSL 配置将由 certbot 自动添加
-    
+    server_name ${domain:-_};
     root /var/www/vps-value-tracker/public;
+    
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    
     index index.php;
     
     charset utf-8;
-    
-    # 安全头部
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-    add_header X-XSS-Protection "1; mode=block";
     
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
@@ -563,12 +558,9 @@ server {
     error_page 404 /index.php;
     
     location ~ \.php$ {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
         fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
         include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-        fastcgi_param PATH_INFO \$fastcgi_path_info;
     }
     
     location ~ /\.(?!well-known).* {
