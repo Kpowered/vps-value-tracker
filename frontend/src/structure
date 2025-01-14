@@ -1,0 +1,19 @@
+frontend/src/
+├── assets/
+├── components/
+│   ├── VPSList.vue
+│   ├── VPSForm.vue
+│   ├── LoginForm.vue
+│   └── RateDisplay.vue
+├── views/
+│   ├── Home.vue
+│   ├── Login.vue
+│   └── Dashboard.vue
+├── store/
+│   └── index.js
+├── api/
+│   ├── vps.js
+│   ├── auth.js
+│   └── rate.js
+└── router/
+    └── index.js 

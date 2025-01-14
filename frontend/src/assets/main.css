@@ -1,0 +1,65 @@
+:root {
+  --primary-color: #409EFF;
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --danger-color: #F56C6C;
+  --info-color: #909399;
+  --text-color: #303133;
+  --border-color: #DCDFE6;
+  --background-color: #F5F7FA;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+    'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text-color);
+}
+
+.el-container {
+  min-height: 100vh;
+}
+
+.el-main {
+  padding: 20px;
+  background-color: var(--background-color);
+}
+
+/* 卡片样式 */
+.el-card {
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 表格样式 */
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 按钮样式 */
+.el-button {
+  border-radius: 4px;
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, #409EFF 0%, #3a8ee6 100%);
+  border: none;
+}
+
+/* 表单样式 */
+.el-form-item__label {
+  font-weight: 500;
+}
+
+.el-input__inner {
+  border-radius: 4px;
+}
+
+/* 标签样式 */
+.el-tag {
+  border-radius: 4px;
+} 
