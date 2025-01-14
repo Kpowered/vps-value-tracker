@@ -499,6 +499,22 @@ class CreateExchangeRatesTable extends Migration
 }
 EOF
 
+# 更新路由文件
+cat > routes/web.php << 'EOF'
+<?php
+
+use App\Http\Controllers\VpsController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', [VpsController::class, 'index'])->name('home');
+
+Route::middleware(['auth'])->group(function () {
+    Route::resource('vps', VpsController::class)->except(['index', 'show']);
+});
+
+require __DIR__.'/auth.php';
+EOF
+
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
 if [ -n "$domain" ]; then
