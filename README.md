@@ -1,206 +1,139 @@
-# VPS 剩余价值展示器
+# VPS Value Tracker
 
-一个用于展示和管理 VPS 剩余价值的全栈应用，支持多币种、自动汇率转换和 Docker 部署。
+一个简单的 VPS 剩余价值展示器，帮助你追踪和管理 VPS 资源。
 
 ## 功能特点
 
-### 核心功能
-- 🔐 管理员认证系统
-- 📊 VPS 信息展示
+- 🔐 简单的登录功能
+- 📊 VPS 信息展示（无需登录）
+- ✨ 支持多种货币（CNY、USD、EUR、GBP、CAD、JPY）
 - 💰 自动计算剩余价值
-- 🌏 多币种支持（CNY, USD, EUR, GBP, CAD, JPY）
-- 💱 自动汇率转换（基于 fixer.io）
-
-### VPS 信息管理
-- 价格：多币种自动转换
-- 配置：标准化的配置信息录入
-- 时间：自动计算剩余时间
-- 价值：基于剩余时间的价值计算
-
-### 数据录入规范
-- CPU：核心数量 + 型号
-- 内存：容量 + 型号
-- 硬盘：容量 + 类型
-- 带宽：流量 + 类型
+- 🔄 自动汇率转换（使用 fixer.io API）
+- 📱 响应式设计，支持移动端
+- 🐳 Docker 一键部署
 
 ## 快速开始
 
-### 环境要求
-- Docker & Docker Compose
-- Linux 系统（推荐 Ubuntu/Debian）
-- 域名（可选，用于 SSL）
+### 使用部署脚本
 
-### Docker 部署
-
-1. 克隆仓库
-
-    ```bash
-    git clone https://github.com/Kpowered/vps-value-tracker.git
-    cd vps-value-tracker
-    ```
-
-2. 配置环境变量
-
-    ```bash
-    cp .env.example .env
-    ```
-
-    编辑 .env 文件：
-    ```ini
-    MONGO_USER=admin
-    MONGO_PASSWORD=your_secure_password
-    JWT_SECRET=your_jwt_secret_key
-    ```
-
-3. 运行部署脚本
-
-    ```bash
-    chmod +x deploy.sh
-    ./deploy.sh
-    ```
-
-    按照提示完成配置：
-    - SSL 证书配置（可选）
-    - 域名设置（如果启用 SSL）
-    - 开机自启动（可选）
-
-### 开发环境设置
-
-1. 安装依赖
-
-    ```bash
-    # 后端
-    cd backend
-    npm install
-
-    # 前端
-    cd ../frontend
-    npm install
-    ```
-
-2. 启动开发服务器
-
-    ```bash
-    # 后端（端口 3000）
-    cd backend
-    npm run dev
-
-    # 前端（端口 3001）
-    cd frontend
-    npm start
-    ```
-
-## API 文档
-
-### 认证接口
-
-#### 创建管理员
-```http
-POST /api/auth/admin
-Content-Type: application/json
-
-{
-    "username": "admin",
-    "password": "your-password"
-}
+1. 下载部署脚本并添加执行权限：
+```bash
+wget https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/deploy.sh
+chmod +x deploy.sh
 ```
 
-#### 管理员登录
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-    "username": "admin",
-    "password": "your-password"
-}
+2. 运行脚本：
+```bash
+./deploy.sh
 ```
 
-### VPS 管理接口
+3. 在菜单中选择"部署服务"选项
 
-#### 创建 VPS
-```http
-POST /api/vps
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-    "name": "VPS名称",
-    "provider": "服务商",
-    "location": "地区",
-    "price": 100,
-    "currency": "USD",
-    "endDate": "2024-12-31",
-    "cpu": {
-        "cores": 2,
-        "model": "Intel Xeon"
-    },
-    "memory": {
-        "size": 4,
-        "type": "DDR4"
-    },
-    "storage": {
-        "size": 50,
-        "type": "SSD"
-    },
-    "bandwidth": {
-        "amount": 1000,
-        "type": "GB"
-    }
-}
-```
-
-#### 获取 VPS 列表
-```http
-GET /api/vps
-```
-
-## 部署说明
-
-### Docker 服务
-- MongoDB：数据存储
-- Redis：汇率缓存
-- Nginx：反向代理
-- Node.js：后端服务
-- React：前端应用
-
-### 环境变量
-- `MONGO_USER`：MongoDB 用户名
-- `MONGO_PASSWORD`：MongoDB 密码
-- `JWT_SECRET`：JWT 密钥
-- `REDIS_HOST`：Redis 地址
-- `REDIS_PORT`：Redis 端口
-- `PORT`：应用端口（默认 3000）
-
-### SSL 配置
-- 自动申请 Let's Encrypt 证书
-- 支持 HTTPS 访问
-- 自动续期证书
+### 默认账号
+- 用户名：admin
+- 密码：admin123456
 
 ## 技术栈
 
-### 后端
-- Node.js + Express
-- TypeScript
-- MongoDB
-- Redis
-- JWT 认证
-
 ### 前端
-- React
+- Vue.js 3 + TypeScript
+- Element Plus UI
+- Vite
+- Pinia 状态管理
+
+### 后端
+- Node.js + Express.js
+- MongoDB 数据库
+- Redis 缓存
 - TypeScript
-- Ant Design
 
 ### 部署
-- Docker & Docker Compose
-- Nginx
-- Let's Encrypt SSL
+- Docker + Docker Compose
+- Nginx 反向代理
+
+## 功能说明
+
+### VPS 信息管理
+- 添加 VPS（需登录）
+  - 服务商信息
+  - CPU 配置（核心数和型号）
+  - 内存大小（GB）
+  - 硬盘大小（GB）
+  - 流量配置（GB）
+  - 价格和货币类型
+
+### 自动化功能
+- 开始时间自动设为当前时间
+- 到期时间自动设为一年后
+- 每日自动更新汇率
+- 自动计算剩余价值
+
+## 开发说明
+
+### 前端开发
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 后端开发
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+## 配置说明
+
+### 环境变量
+前端配置（.env）：
+```env
+VITE_API_BASE_URL=/api
+```
+
+后端配置（docker-compose.yml）：
+```yaml
+environment:
+  - MONGODB_URI=mongodb://mongodb:27017/vps-tracker
+  - REDIS_HOST=redis
+  - JWT_SECRET=your-secret-key
+```
+
+## 卸载
+
+1. 运行部署脚本：
+```bash
+./deploy.sh
+```
+
+2. 在菜单中选择"删除服务"选项
+
+## 项目结构
+
+```
+.
+├── frontend/                # 前端项目
+│   ├── src/
+│   │   ├── views/          # 页面组件
+│   │   ├── components/     # 通用组件
+│   │   ├── stores/         # Pinia 状态管理
+│   │   └── utils/          # 工具函数
+│   └── ...
+├── backend/                # 后端项目
+│   ├── src/
+│   │   ├── controllers/    # 控制器
+│   │   ├── models/         # 数据模型
+│   │   ├── services/       # 业务逻辑
+│   │   └── middleware/     # 中间件
+│   └── ...
+└── deploy.sh              # 部署脚本
+```
 
 ## 许可证
 
-MIT License - 详见 [LICENSE](LICENSE) 文件
+MIT License
 
-## 联系方式
+## 作者
 
-- 项目地址：[GitHub](https://github.com/Kpowered/vps-value-tracker)
-- 问题反馈：请使用 GitHub Issues 
+[Kpowered](https://github.com/Kpowered)

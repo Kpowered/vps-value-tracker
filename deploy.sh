@@ -2,135 +2,113 @@
 
 # 颜色定义
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# 检查是否安装了必要的软件
-check_dependencies() {
-    echo "检查依赖..."
-    
+# 项目配置
+REPO_URL="https://github.com/Kpowered/vps-value-tracker.git"
+PROJECT_DIR="vps-value-tracker"
+
+# 检查 Docker 是否安装
+check_docker() {
     if ! command -v docker &> /dev/null; then
-        echo -e "${RED}Docker 未安装${NC}"
-        install_docker
+        echo -e "${RED}Docker 未安装，正在安装...${NC}"
+        curl -fsSL https://get.docker.com | sh
+        sudo systemctl enable docker
+        sudo systemctl start docker
     fi
 
     if ! command -v docker-compose &> /dev/null; then
-        echo -e "${RED}Docker Compose 未安装${NC}"
-        install_docker_compose
+        echo -e "${RED}Docker Compose 未安装，正在安装...${NC}"
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
     fi
 }
 
-# 安装 Docker
-install_docker() {
-    echo "安装 Docker..."
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh
-    sudo usermod -aG docker $USER
-    rm get-docker.sh
-}
-
-# 安装 Docker Compose
-install_docker_compose() {
-    echo "安装 Docker Compose..."
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-}
-
-# 配置 SSL 证书
-setup_ssl() {
-    if [ ! -d "nginx/ssl" ]; then
-        mkdir -p nginx/ssl
-    fi
-
-    read -p "是否需要配置 SSL 证书? (y/n) " setup_ssl
-    if [ "$setup_ssl" = "y" ]; then
-        read -p "请输入域名: " domain_name
-        echo "生成 SSL 证书..."
-        sudo certbot certonly --standalone -d $domain_name
-        sudo cp /etc/letsencrypt/live/$domain_name/fullchain.pem nginx/ssl/
-        sudo cp /etc/letsencrypt/live/$domain_name/privkey.pem nginx/ssl/
-        
-        # 更新 Nginx 配置以支持 SSL
-        sed -i "s/listen 80;/listen 443 ssl;/" nginx/nginx.conf
-        echo "ssl_certificate /etc/nginx/ssl/fullchain.pem;" >> nginx/nginx.conf
-        echo "ssl_certificate_key /etc/nginx/ssl/privkey.pem;" >> nginx/nginx.conf
-    fi
-}
-
-# 启动应用
-start_application() {
-    echo "启动应用..."
-    docker-compose up -d --build
-
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}应用启动成功!${NC}"
-        echo "可以通过以下地址访问:"
-        echo "http://localhost (HTTP)"
-        if [ "$setup_ssl" = "y" ]; then
-            echo "https://$domain_name (HTTPS)"
-        fi
+# 克隆或更新代码
+clone_repo() {
+    echo -e "${YELLOW}克隆/更新代码...${NC}"
+    if [ ! -d "$PROJECT_DIR" ]; then
+        git clone "$REPO_URL"
+        cd "$PROJECT_DIR"
     else
-        echo -e "${RED}应用启动失败${NC}"
-        exit 1
+        cd "$PROJECT_DIR"
+        git pull
     fi
 }
 
-# 设置开机自启
-setup_autostart() {
-    echo "配置开机自启..."
-    
-    # 创建 systemd 服务文件
-    sudo tee /etc/systemd/system/vps-tracker.service > /dev/null <<EOL
-[Unit]
-Description=VPS Value Tracker
-After=docker.service
-Requires=docker.service
+# 启动服务
+start_services() {
+    echo -e "${YELLOW}启动服务...${NC}"
+    docker-compose up -d --build
+    echo -e "${GREEN}服务已启动${NC}"
+    echo -e "${GREEN}默认管理员账号: admin${NC}"
+    echo -e "${GREEN}默认管理员密码: admin123456${NC}"
+    echo -e "${GREEN}访问地址: http://localhost${NC}"
+}
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-WorkingDirectory=$(pwd)
-ExecStart=/usr/local/bin/docker-compose up -d
-ExecStop=/usr/local/bin/docker-compose down
+# 停止服务
+stop_services() {
+    echo -e "${YELLOW}停止服务...${NC}"
+    docker-compose down
+    echo -e "${GREEN}服务已停止${NC}"
+}
 
-[Install]
-WantedBy=multi-user.target
-EOL
+# 删除服务
+remove_services() {
+    echo -e "${YELLOW}删除服务...${NC}"
+    docker-compose down -v --rmi all
+    cd ..
+    rm -rf "$PROJECT_DIR"
+    echo -e "${GREEN}服务已完全删除${NC}"
+}
 
-    # 启用服务
-    sudo systemctl enable vps-tracker.service
-    echo -e "${GREEN}开机自启配置完成${NC}"
+# 显示菜单
+show_menu() {
+    echo -e "${YELLOW}VPS 价值追踪器 - 管理菜单${NC}"
+    echo "1) 部署服务"
+    echo "2) 停止服务"
+    echo "3) 重启服务"
+    echo "4) 删除服务"
+    echo "5) 退出"
 }
 
 # 主函数
 main() {
-    echo "VPS Value Tracker 部署脚本"
-    echo "=========================="
+    check_docker
 
-    # 检查依赖
-    check_dependencies
+    while true; do
+        show_menu
+        read -p "请输入选项 [1-5]: " choice
 
-    # 创建环境变量文件
-    if [ ! -f ".env" ]; then
-        echo "创建环境变量文件..."
-        cp .env.example .env
-        echo "请编辑 .env 文件配置环境变量"
-        exit 1
-    fi
-
-    # 配置 SSL
-    setup_ssl
-
-    # 启动应用
-    start_application
-
-    # 配置开机自启
-    read -p "是否配置开机自启? (y/n) " setup_autostart
-    if [ "$setup_autostart" = "y" ]; then
-        setup_autostart
-    fi
-
-    echo -e "${GREEN}部署完成!${NC}"
+        case $choice in
+            1)
+                clone_repo
+                start_services
+                ;;
+            2)
+                cd "$PROJECT_DIR" 2>/dev/null
+                stop_services
+                ;;
+            3)
+                cd "$PROJECT_DIR" 2>/dev/null
+                stop_services
+                start_services
+                ;;
+            4)
+                cd "$PROJECT_DIR" 2>/dev/null
+                remove_services
+                ;;
+            5)
+                echo -e "${GREEN}再见！${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}无效选项${NC}"
+                ;;
+        esac
+    done
 }
 
 # 运行主函数
