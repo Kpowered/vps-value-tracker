@@ -52,8 +52,7 @@
 1. 下载安装脚本
 
     ```bash
-    curl -O https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/scripts/deploy.sh
-    chmod +x deploy.sh
+    curl -O https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/scripts/deploy.sh && chmod +x deploy.sh && ./deploy.sh install
     ```
 
 2. 运行安装

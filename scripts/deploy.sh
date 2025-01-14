@@ -22,7 +22,7 @@ check_requirements() {
         echo -e "${RED}未安装Docker Compose！${NC}"
         echo "请先安装Docker Compose: https://docs.docker.com/compose/install/"
         exit 1
-    }
+    fi
     
     echo -e "${GREEN}系统要求检查通过${NC}"
 }
