@@ -34,49 +34,47 @@ echo -e "${YELLOW}添加 PHP 仓库...${NC}"
 curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
 echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
 
-# 添加 MySQL 仓库
-echo -e "${YELLOW}添加 MySQL 仓库...${NC}"
-curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 | gpg --dearmor -o /usr/share/keyrings/mysql.gpg
-echo "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian $(lsb_release -sc) mysql-8.0" > /etc/apt/sources.list.d/mysql.list
+# 删除之前的 MySQL 仓库配置
+rm -f /etc/apt/sources.list.d/mysql.list
+rm -f /usr/share/keyrings/mysql.gpg
 
-# 更新软件包列表
-apt-get update
+# 安装 MariaDB
+echo -e "${YELLOW}安装 MariaDB...${NC}"
+DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server
 
-# 安装 MySQL
-echo -e "${YELLOW}安装 MySQL...${NC}"
-DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+# 确保 MariaDB 服务启动
+echo -e "${YELLOW}启动 MariaDB 服务...${NC}"
+systemctl enable mariadb
+systemctl start mariadb
 
-# 确保 MySQL 服务启动
-echo -e "${YELLOW}启动 MySQL 服务...${NC}"
-systemctl enable mysql
-systemctl start mysql
-
-# 等待 MySQL 启动（最多等待 30 秒）
-echo -e "${YELLOW}等待 MySQL 启动...${NC}"
+# 等待 MariaDB 启动（最多等待 30 秒）
+echo -e "${YELLOW}等待 MariaDB 启动...${NC}"
 counter=0
-while ! systemctl is-active --quiet mysql && [ $counter -lt 30 ]; do
+while ! systemctl is-active --quiet mariadb && [ $counter -lt 30 ]; do
     sleep 1
     ((counter++))
 done
 
-if ! systemctl is-active --quiet mysql; then
-    echo -e "${RED}MySQL 启动失败${NC}"
+if ! systemctl is-active --quiet mariadb; then
+    echo -e "${RED}MariaDB 启动失败${NC}"
     exit 1
 fi
 
-# 设置 MySQL root 密码
-echo -e "${YELLOW}配置 MySQL...${NC}"
+# 设置 MariaDB root 密码
+echo -e "${YELLOW}配置 MariaDB...${NC}"
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
 
-# 尝试设置 root 密码
-mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';" || {
-    echo -e "${RED}MySQL root 密码设置失败${NC}"
-    exit 1
-}
+# 安全配置
+mysql -e "UPDATE mysql.user SET Password=PASSWORD('$MYSQL_ROOT_PASSWORD') WHERE User='root';"
+mysql -e "DELETE FROM mysql.user WHERE User='';"
+mysql -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+mysql -e "DROP DATABASE IF EXISTS test;"
+mysql -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';"
+mysql -e "FLUSH PRIVILEGES;"
 
-# 验证 MySQL 连接
+# 验证连接
 if ! mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" 2>/dev/null; then
-    echo -e "${RED}MySQL 配置失败${NC}"
+    echo -e "${RED}MariaDB 配置失败${NC}"
     exit 1
 fi
 
