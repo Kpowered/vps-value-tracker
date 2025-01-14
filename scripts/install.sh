@@ -89,7 +89,7 @@ apt-get update
 # 安装 PHP 和其他依赖
 echo -e "${YELLOW}安装 PHP 和其他依赖...${NC}"
 apt-get install -y nginx php8.1-fpm php8.1-mysql php8.1-mbstring \
-    php8.1-xml php8.1-curl php8.1-zip php8.1-cli \
+    php8.1-xml php8.1-curl php8.1-zip php8.1-cli php8.1-intl \
     composer certbot python3-certbot-nginx git unzip
 
 # 确保 PHP-FPM 服务存在并启动
