@@ -69,4 +69,174 @@ install_system_dependencies() {
     esac
 }
 
-[... 部署脚本的其余部分 ...] 
+# 克隆或更新代码
+setup_workspace() {
+    echo -e "${YELLOW}设置工作目录...${NC}"
+    
+    if [ ! -d "$PROJECT_DIR" ]; then
+        echo -e "${YELLOW}克隆项目代码...${NC}"
+        git clone $REPO_URL
+        cd $PROJECT_DIR
+    else
+        cd $PROJECT_DIR
+        echo -e "${YELLOW}更新项目代码...${NC}"
+        git pull
+    fi
+}
+
+# 构建项目
+build_project() {
+    echo -e "${YELLOW}构建项目...${NC}"
+    
+    # 构建后端
+    cd backend
+    go mod tidy
+    go build -o vps-tracker ./cmd/server
+    cd ..
+    
+    # 构建前端
+    cd frontend
+    npm install
+    npm run build
+    cd ..
+}
+
+# 配置Nginx
+setup_nginx() {
+    echo -e "${YELLOW}配置Nginx...${NC}"
+    
+    sudo cp configs/nginx.conf /etc/nginx/conf.d/vps-tracker.conf
+    sudo nginx -t
+    if [ $? -eq 0 ]; then
+        sudo systemctl restart nginx
+        echo -e "${GREEN}Nginx配置成功${NC}"
+    else
+        echo -e "${RED}Nginx配置失败${NC}"
+        exit 1
+    fi
+}
+
+# 启动服务
+start_services() {
+    echo -e "${YELLOW}启动服务...${NC}"
+    
+    # 启动MongoDB
+    sudo systemctl start mongodb
+    
+    # 启动后端服务
+    cd $PROJECT_DIR/backend
+    ./vps-tracker &
+    cd ..
+    
+    echo -e "${GREEN}服务启动成功！${NC}"
+    echo -e "访问地址: http://localhost:3000"
+}
+
+# 停止服务
+stop_services() {
+    echo -e "${YELLOW}停止服务...${NC}"
+    
+    # 停止后端服务
+    pkill -f "vps-tracker"
+    
+    # 停止MongoDB
+    sudo systemctl stop mongodb
+    
+    echo -e "${GREEN}服务已停止${NC}"
+}
+
+# 卸载服务
+uninstall() {
+    echo -e "${YELLOW}正在卸载...${NC}"
+    
+    # 停止服务
+    stop_services
+    
+    # 删除项目文件
+    read -p "是否删除项目文件？(y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        cd ..
+        rm -rf $PROJECT_DIR
+        echo -e "${GREEN}项目文件已删除${NC}"
+    fi
+    
+    echo -e "${GREEN}卸载完成${NC}"
+}
+
+# 主函数
+main() {
+    if [ -n "$1" ]; then
+        case "$1" in
+            "install")
+                check_requirements
+                install_system_dependencies
+                setup_workspace
+                build_project
+                setup_nginx
+                start_services
+                ;;
+            "start")
+                start_services
+                ;;
+            "stop")
+                stop_services
+                ;;
+            "restart")
+                stop_services
+                start_services
+                ;;
+            "uninstall")
+                uninstall
+                ;;
+            *)
+                echo -e "${RED}未知命令: $1${NC}"
+                show_help
+                exit 1
+                ;;
+        esac
+    else
+        while true; do
+            show_menu
+            case $choice in
+                1)
+                    check_requirements
+                    install_system_dependencies
+                    setup_workspace
+                    build_project
+                    setup_nginx
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                2)
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                3)
+                    stop_services
+                    read -p "按Enter继续..."
+                    ;;
+                4)
+                    stop_services
+                    start_services
+                    read -p "按Enter继续..."
+                    ;;
+                5)
+                    uninstall
+                    read -p "按Enter继续..."
+                    ;;
+                6)
+                    echo "再见！"
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}无效的选择${NC}"
+                    read -p "按Enter继续..."
+                    ;;
+            esac
+        done
+    fi
+}
+
+# 执行主函数
+main "$@" 
