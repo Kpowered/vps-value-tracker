@@ -42,12 +42,12 @@ show_menu() {
 check_requirements() {
     echo -e "${YELLOW}检查系统要求...${NC}"
     
-    if ! command -v go &> /dev/null; then
+    if ! command -v go >/dev/null 2>&1; then
         echo -e "${RED}未安装Go！${NC}"
         return 1
     fi
     
-    if ! command -v mongod &> /dev/null; then
+    if ! command -v mongod >/dev/null 2>&1; then
         echo -e "${RED}未安装MongoDB！${NC}"
         return 1
     fi
@@ -57,7 +57,7 @@ check_requirements() {
 }
 
 # 安装系统依赖
-install_system_dependencies() {
+install_dependencies() {
     echo -e "${YELLOW}安装系统依赖...${NC}"
     
     if [ -f /etc/os-release ]; then
@@ -72,24 +72,24 @@ install_system_dependencies() {
                 ;;
             *)
                 echo -e "${RED}不支持的操作系统类型${NC}"
-                exit 1
+                return 1
                 ;;
         esac
     else
         echo -e "${RED}无法确定操作系统类型${NC}"
-        exit 1
+        return 1
     fi
 }
 
-# 克隆或更新代码
-setup_workspace() {
-    echo -e "${YELLOW}设置工作目录...${NC}"
+# 克隆代码
+clone_repo() {
+    echo -e "${YELLOW}克隆代码...${NC}"
     
     if [ ! -d "$PROJECT_DIR" ]; then
         git clone "$REPO_URL"
-        cd "$PROJECT_DIR" || exit 1
+        cd "$PROJECT_DIR" || return 1
     else
-        cd "$PROJECT_DIR" || exit 1
+        cd "$PROJECT_DIR" || return 1
         git pull
     fi
 }
@@ -98,11 +98,11 @@ setup_workspace() {
 build_project() {
     echo -e "${YELLOW}构建项目...${NC}"
     
-    cd backend || exit 1
+    cd backend || return 1
     go mod tidy
     go build -o "$SERVICE_NAME" ./cmd/server
     
-    cd ../frontend || exit 1
+    cd ../frontend || return 1
     npm install
     npm run build
     
@@ -111,9 +111,9 @@ build_project() {
 
 # 配置服务
 setup_service() {
-    echo -e "${YELLOW}配置系统服务...${NC}"
+    echo -e "${YELLOW}配置服务...${NC}"
     
-    sudo tee /etc/systemd/system/$SERVICE_NAME.service > /dev/null << EOF
+    cat > /tmp/vps-tracker.service << EOF
 [Unit]
 Description=VPS Value Tracker
 After=network.target mongodb.service
@@ -129,51 +129,21 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
+    sudo mv /tmp/vps-tracker.service /etc/systemd/system/
     sudo systemctl daemon-reload
     sudo systemctl enable $SERVICE_NAME
 }
 
-# 配置Nginx
-setup_nginx() {
-    echo -e "${YELLOW}配置Nginx...${NC}"
-    
-    sudo tee /etc/nginx/conf.d/$SERVICE_NAME.conf > /dev/null << EOF
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-EOF
-
-    sudo nginx -t
-    if [ $? -eq 0 ]; then
-        sudo systemctl restart nginx
-        echo -e "${GREEN}Nginx配置成功${NC}"
-    else
-        echo -e "${RED}Nginx配置失败${NC}"
-        exit 1
-    fi
-}
-
 # 启动服务
-start_services() {
+start_service() {
     echo -e "${YELLOW}启动服务...${NC}"
     sudo systemctl start mongodb
     sudo systemctl start $SERVICE_NAME
-    echo -e "${GREEN}服务启动成功！${NC}"
-    echo -e "访问地址: http://localhost"
+    echo -e "${GREEN}服务已启动${NC}"
 }
 
 # 停止服务
-stop_services() {
+stop_service() {
     echo -e "${YELLOW}停止服务...${NC}"
     sudo systemctl stop $SERVICE_NAME
     sudo systemctl stop mongodb
@@ -181,15 +151,12 @@ stop_services() {
 }
 
 # 卸载服务
-uninstall() {
-    echo -e "${YELLOW}正在卸载...${NC}"
-    
-    stop_services
+uninstall_service() {
+    echo -e "${YELLOW}卸载服务...${NC}"
+    stop_service
     sudo systemctl disable $SERVICE_NAME
     sudo rm -f /etc/systemd/system/$SERVICE_NAME.service
-    sudo rm -f /etc/nginx/conf.d/$SERVICE_NAME.conf
     sudo systemctl daemon-reload
-    sudo systemctl restart nginx
     
     read -p "是否删除项目文件？(y/n) " -n 1 -r
     echo
@@ -198,34 +165,36 @@ uninstall() {
         rm -rf "$PROJECT_DIR"
         echo -e "${GREEN}项目文件已删除${NC}"
     fi
-    
-    echo -e "${GREEN}卸载完成${NC}"
+}
+
+# 安装服务
+install_service() {
+    check_requirements && \
+    install_dependencies && \
+    clone_repo && \
+    build_project && \
+    setup_service && \
+    start_service
 }
 
 # 主函数
 main() {
-    if [ -n "$1" ]; then
+    if [ $# -gt 0 ]; then
         case "$1" in
-            "install")
-                check_requirements && \
-                install_system_dependencies && \
-                setup_workspace && \
-                build_project && \
-                setup_service && \
-                setup_nginx && \
-                start_services
+            install)
+                install_service
                 ;;
-            "start")
-                start_services
+            start)
+                start_service
                 ;;
-            "stop")
-                stop_services
+            stop)
+                stop_service
                 ;;
-            "restart")
-                stop_services && start_services
+            restart)
+                stop_service && start_service
                 ;;
-            "uninstall")
-                uninstall
+            uninstall)
+                uninstall_service
                 ;;
             *)
                 show_help
@@ -237,29 +206,23 @@ main() {
             show_menu
             case $choice in
                 1)
-                    check_requirements && \
-                    install_system_dependencies && \
-                    setup_workspace && \
-                    build_project && \
-                    setup_service && \
-                    setup_nginx && \
-                    start_services
+                    install_service
                     read -p "按Enter继续..."
                     ;;
                 2)
-                    start_services
+                    start_service
                     read -p "按Enter继续..."
                     ;;
                 3)
-                    stop_services
+                    stop_service
                     read -p "按Enter继续..."
                     ;;
                 4)
-                    stop_services && start_services
+                    stop_service && start_service
                     read -p "按Enter继续..."
                     ;;
                 5)
-                    uninstall
+                    uninstall_service
                     read -p "按Enter继续..."
                     ;;
                 6)
