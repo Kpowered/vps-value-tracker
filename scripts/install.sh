@@ -267,22 +267,131 @@ class VpsController extends Controller
 }
 EOF
 
-# 创建视图目录
+# 创建布局目录
+mkdir -p resources/views/layouts
+
+# 创建布局文件
+cat > resources/views/layouts/app.blade.php << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Value Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow mb-4">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between">
+                <a href="{{ route('home') }}" class="text-xl font-bold">VPS Value Tracker</a>
+                @auth
+                    <div>
+                        <a href="{{ route('vps.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add VPS</a>
+                        <form action="{{ route('logout') }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="text-gray-600 hover:text-gray-800 ml-4">Logout</button>
+                        </form>
+                    </div>
+                @else
+                    <a href="{{ route('login') }}" class="text-gray-600 hover:text-gray-800">Login</a>
+                @endauth
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4">
+        @yield('content')
+    </main>
+</body>
+</html>
+EOF
+
+# 创建 VPS 视图目录
 mkdir -p resources/views/vps
 
-# 创建视图文件
+# 创建 index 视图
 cat > resources/views/vps/index.blade.php << 'EOF'
 @extends('layouts.app')
 
 @section('content')
-<!-- ... (使用之前提供的 index.blade.php 内容) ... -->
-EOF
+<div class="bg-white rounded-lg shadow p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">VPS List</h1>
+        @auth
+            <a href="{{ route('vps.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Add New VPS
+            </a>
+        @endauth
+    </div>
 
-cat > resources/views/vps/create.blade.php << 'EOF'
-@extends('layouts.app')
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
-@section('content')
-<!-- ... (使用之前提供的 create.blade.php 内容) ... -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-auto">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="px-4 py-2">Vendor</th>
+                    <th class="px-4 py-2">CPU</th>
+                    <th class="px-4 py-2">Memory</th>
+                    <th class="px-4 py-2">Storage</th>
+                    <th class="px-4 py-2">Bandwidth</th>
+                    <th class="px-4 py-2">Price</th>
+                    <th class="px-4 py-2">Remaining Value</th>
+                    <th class="px-4 py-2">Expires</th>
+                    @auth
+                        <th class="px-4 py-2">Actions</th>
+                    @endauth
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($vpsList as $vps)
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ $vps->vendor_name }}</td>
+                    <td class="px-4 py-2">{{ $vps->cpu_model }} ({{ $vps->cpu_cores }} cores)</td>
+                    <td class="px-4 py-2">{{ $vps->memory_gb }} GB</td>
+                    <td class="px-4 py-2">{{ $vps->storage_gb }} GB</td>
+                    <td class="px-4 py-2">{{ $vps->bandwidth_gb }} GB</td>
+                    <td class="px-4 py-2">
+                        {{ number_format($vps->price, 2) }} {{ $vps->currency }}
+                    </td>
+                    <td class="px-4 py-2">
+                        {{ number_format($vps->remaining_value, 2) }} {{ $vps->currency }}
+                        <br>
+                        <span class="text-sm text-gray-600">
+                            ≈ ¥{{ number_format($vps->remaining_value_cny, 2) }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2">{{ $vps->end_date->format('Y-m-d') }}</td>
+                    @auth
+                        <td class="px-4 py-2">
+                            <form action="{{ route('vps.destroy', $vps) }}" method="POST" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-red-600 hover:text-red-800"
+                                        onclick="return confirm('Are you sure you want to delete this VPS?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    @endauth
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                        No VPS records found. @auth Click "Add New VPS" to add one. @endauth
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endsection
 EOF
 
 # 更新 .env 文件
@@ -513,6 +622,27 @@ Route::middleware(['auth'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+EOF
+
+# 创建 auth 路由文件
+cat > routes/auth.php << 'EOF'
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('guest')->group(function () {
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->name('login');
+
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->name('logout');
+});
 EOF
 
 echo -e "${GREEN}安装完成！${NC}"
