@@ -690,11 +690,8 @@ cat > app/Http/Requests/Auth/LoginRequest.php << 'EOF'
 
 namespace App\Http\Requests\Auth;
 
-use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
@@ -707,18 +704,22 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
     }
 
     public function authenticate(): void
     {
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // 获取第一个用户（管理员）
+        $admin = \App\Models\User::first();
+        
+        if (!$admin || !password_verify($this->password, $admin->password)) {
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'password' => ['Invalid password.'],
             ]);
         }
+
+        Auth::login($admin, $this->boolean('remember'));
     }
 }
 EOF
@@ -768,13 +769,11 @@ cat > resources/views/auth/login.blade.php << 'EOF'
         @csrf
 
         <div class="mb-4">
-            <label for="email" class="block text-gray-700 mb-2">Email</label>
-            <input type="email" name="email" id="email" class="form-input w-full rounded" required autofocus>
-        </div>
-
-        <div class="mb-4">
             <label for="password" class="block text-gray-700 mb-2">Password</label>
-            <input type="password" name="password" id="password" class="form-input w-full rounded" required>
+            <input type="password" name="password" id="password" class="form-input w-full rounded" required autofocus>
+            @error('password')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-6">
@@ -840,17 +839,19 @@ class MakeAdmin extends Command
 
     public function handle()
     {
-        $name = $this->ask('What is the admin name?');
-        $email = $this->ask('What is the admin email?');
-        $password = $this->secret('What is the admin password?');
+        // 删除所有现有用户
+        User::truncate();
+
+        $password = $this->secret('Enter admin password') ?: 'admin123';
 
         User::create([
-            'name' => $name,
-            'email' => $email,
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
             'password' => Hash::make($password),
         ]);
 
         $this->info('Admin user created successfully!');
+        $this->info("Password: " . ($password === 'admin123' ? 'admin123 (default)' : '(as entered)'));
     }
 }
 EOF
