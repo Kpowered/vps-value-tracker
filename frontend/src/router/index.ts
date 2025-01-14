@@ -1,34 +1,32 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
-
-const routes: RouteRecordRaw[] = [
-  {
-    path: '/',
-    component: () => import('../layouts/DefaultLayout.vue'),
-    children: [
-      {
-        path: '',
-        name: 'home',
-        component: () => import('../views/VPSList.vue'),
-      },
-      {
-        path: 'login',
-        name: 'login',
-        component: () => import('../views/Login.vue'),
-      },
-      {
-        path: 'add',
-        name: 'add-vps',
-        component: () => import('../views/AddVPS.vue'),
-        meta: { requiresAuth: true }
-      }
-    ]
-  }
-]
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes: [
+    {
+      path: '/',
+      component: DefaultLayout,
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('@/views/VPSList.vue')
+        },
+        {
+          path: 'add',
+          name: 'add-vps',
+          component: () => import('@/views/AddVPS.vue'),
+          meta: { requiresAuth: true }
+        }
+      ]
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/Login.vue')
+    }
+  ]
 })
 
 // 路由守卫

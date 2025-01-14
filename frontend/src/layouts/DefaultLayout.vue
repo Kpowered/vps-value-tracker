@@ -1,18 +1,18 @@
 <template>
-  <el-container>
+  <el-container class="layout">
     <el-header>
       <div class="header-content">
-        <h1>VPS 价值追踪器</h1>
+        <h1>VPS Value Tracker</h1>
         <div class="header-right">
-          <template v-if="authStore.isAuthenticated">
-            <el-button type="danger" @click="handleLogout">退出登录</el-button>
-          </template>
-          <template v-else>
-            <el-button type="primary" @click="$router.push('/login')">登录</el-button>
-          </template>
+          <el-button v-if="token" type="primary" @click="router.push('/add')">
+            添加 VPS
+          </el-button>
+          <el-button v-if="token" @click="logout">退出</el-button>
+          <el-button v-else @click="router.push('/login')">登录</el-button>
         </div>
       </div>
     </el-header>
+
     <el-main>
       <router-view />
     </el-main>
@@ -20,43 +20,38 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '../stores/auth'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const authStore = useAuthStore()
 const router = useRouter()
+const token = ref(localStorage.getItem('token'))
 
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/')
+const logout = () => {
+  localStorage.removeItem('token')
+  token.value = null
+  router.push('/login')
 }
 </script>
 
 <style scoped>
-.el-header {
-  background-color: #fff;
-  border-bottom: 1px solid #dcdfe6;
-  padding: 0 20px;
+.layout {
+  min-height: 100vh;
 }
 
 .header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  height: 60px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
+  height: 100%;
 }
 
 .header-right {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 1rem;
 }
 
-.el-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
 }
 </style> 

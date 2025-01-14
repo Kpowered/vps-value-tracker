@@ -1,21 +1,17 @@
-FROM node:18-alpine
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# 首先复制 package.json 和 package-lock.json（如果存在）
-COPY package*.json ./
+COPY go.* ./
+RUN go mod download
 
-# 安装依赖
-RUN npm install
-
-# 复制源代码和配置文件
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o server
 
-# 编译 TypeScript
-RUN npm run build
+FROM alpine:latest
 
-# 暴露端口
+WORKDIR /app
+COPY --from=builder /app/server .
+
 EXPOSE 3000
-
-# 启动应用
-CMD ["npm", "start"] 
+CMD ["./server"] 

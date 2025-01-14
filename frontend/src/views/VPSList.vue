@@ -10,29 +10,35 @@
         </div>
       </template>
 
-      <el-table :data="vpsList" stripe>
+      <el-table v-loading="loading" :data="vpsList" style="width: 100%">
         <el-table-column prop="provider" label="服务商" />
-        <el-table-column prop="cpu.cores" label="CPU核心数" />
-        <el-table-column prop="memory.size" label="内存(GB)" />
-        <el-table-column prop="storage.size" label="硬盘(GB)" />
-        <el-table-column prop="bandwidth.amount" label="流量(GB)" />
+        <el-table-column prop="specs" label="配置" />
         <el-table-column label="价格">
           <template #default="{ row }">
             {{ row.price }} {{ row.currency }}
-            <br>
-            <small>(￥{{ row.priceInCNY }})</small>
-          </template>
-        </el-table-column>
-        <el-table-column label="剩余价值">
-          <template #default="{ row }">
-            {{ row.remainingValue }} {{ row.currency }}
-            <br>
-            <small>(￥{{ row.remainingValueCNY }})</small>
           </template>
         </el-table-column>
         <el-table-column label="到期时间">
           <template #default="{ row }">
             {{ new Date(row.endDate).toLocaleDateString() }}
+          </template>
+        </el-table-column>
+        <el-table-column label="剩余价值">
+          <template #default="{ row }">
+            {{ calculateRemainingValue(row) }} {{ row.currency }}
+          </template>
+        </el-table-column>
+        <el-table-column v-if="token" label="操作" width="150">
+          <template #default="{ row }">
+            <el-button-group>
+              <el-button
+                type="danger"
+                size="small"
+                @click="handleDelete(row.id!)"
+              >
+                删除
+              </el-button>
+            </el-button-group>
           </template>
         </el-table-column>
       </el-table>
@@ -42,22 +48,49 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useAuthStore } from '../stores/auth'
-import { api } from '../utils/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { vpsApi, type VPS } from '@/utils/api'
 
-const authStore = useAuthStore()
-const vpsList = ref([])
+const vpsList = ref<VPS[]>([])
+const loading = ref(false)
 
-const fetchVPSList = async () => {
+const loadVPSList = async () => {
   try {
-    const { data } = await api.get('/vps')
+    loading.value = true
+    const { data } = await vpsApi.list()
     vpsList.value = data
   } catch (error) {
-    console.error('Failed to fetch VPS list:', error)
+    ElMessage.error('加载 VPS 列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(fetchVPSList)
+const handleDelete = async (id: string) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这个 VPS 吗？', '提示', {
+      type: 'warning'
+    })
+    await vpsApi.delete(id)
+    ElMessage.success('删除成功')
+    loadVPSList()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const calculateRemainingValue = (vps: VPS) => {
+  const now = new Date()
+  const end = new Date(vps.endDate)
+  const total = end.getTime() - new Date(vps.startDate).getTime()
+  const remaining = end.getTime() - now.getTime()
+  const ratio = Math.max(0, remaining / total)
+  return (vps.price * ratio).toFixed(2)
+}
+
+onMounted(loadVPSList)
 </script>
 
 <style scoped>
@@ -65,5 +98,9 @@ onMounted(fetchVPSList)
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.vps-list {
+  padding: 20px;
 }
 </style> 
