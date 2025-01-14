@@ -4,6 +4,23 @@ import { User } from '../models/User';
 import { config } from '../config';
 
 export class AuthController {
+  // 初始化管理员账号
+  static async initAdmin() {
+    try {
+      const adminExists = await User.findOne({ username: 'admin' });
+      if (!adminExists) {
+        const admin = new User({
+          username: 'admin',
+          password: 'admin123456'
+        });
+        await admin.save();
+        console.log('Default admin account created');
+      }
+    } catch (error) {
+      console.error('Error creating admin account:', error);
+    }
+  }
+
   login = async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;

@@ -6,6 +6,7 @@ import { config } from './config';
 import { vpsRoutes } from './routes/vps';
 import { authRoutes } from './routes/auth';
 import { errorHandler } from './middleware/error';
+import { AuthController } from './controllers/AuthController';
 
 const app = express();
 
@@ -15,7 +16,11 @@ app.use(express.json());
 
 // 数据库连接
 mongoose.connect(config.mongodb.uri)
-  .then(() => console.log('MongoDB connected'))
+  .then(async () => {
+    console.log('MongoDB connected');
+    // 初始化管理员账号
+    await AuthController.initAdmin();
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Redis 客户端
