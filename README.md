@@ -2,6 +2,11 @@
 
 VPS Value Tracker 是一个帮助追踪和管理 VPS 服务器价值的工具。它可以记录不同供应商的 VPS 配置和价格，并自动计算剩余价值。
 
+这是一个纯 RESTful API 服务，您可以：
+- 直接调用 API
+- 使用 Postman 等工具测试
+- 开发自己的前端界面
+
 ## 功能特点
 
 - 多货币支持（CNY、USD、EUR、GBP、CAD、JPY）
@@ -125,9 +130,6 @@ vps-value-tracker/
 │   │   ├── utils/
 │   │   └── validator/
 │   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   └── Dockerfile
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -145,13 +147,6 @@ cd backend
 go run cmd/server/main.go
 ```
 
-3. 启动前端
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
 ## 部署
 
 ### 使用 Docker Compose（推荐）
@@ -164,8 +159,7 @@ docker-compose up -d
 
 1. 配置 MongoDB
 2. 构建并运行后端
-3. 构建并运行前端
-4. 配置 Nginx
+3. 配置 Nginx
 
 ## 注意事项
 
