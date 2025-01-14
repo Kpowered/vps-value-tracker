@@ -12,7 +12,7 @@
 - 💰 价值计算
   - 自动计算VPS剩余价值
   - 多币种支持(CNY/USD/EUR/GBP/CAD/JPY)
-  - 实时汇率转换
+  - 每日更新汇率（通过 Fixer.io API）
   - 统一人民币显示
 
 - 👥 用户系统
@@ -23,7 +23,7 @@
 - 📱 界面设计
   - 响应式布局
   - 移动端友好
-  - 清晰的数据展示
+  - 参考 Fixer.io 的简洁风格
 
 ## 技术栈
 
@@ -141,7 +141,7 @@ MONGODB_URI=mongodb://localhost:27017/vps-tracker
 JWT_SECRET=your-secret-key
 
 # Fixer.io API密钥
-FIXER_API_KEY=your-fixer-api-key
+FIXER_API_KEY=e65a0dbfc190ce964f2771bca5c08e13
 
 # 服务端口
 PORT=3000

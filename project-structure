@@ -1,6 +1,0 @@
-vps-value-tracker/
-├── frontend/          # Vue.js前端项目
-├── backend/           # Node.js后端项目
-├── docker/           # Docker配置文件
-├── scripts/          # 部署脚本
-└── nginx/            # Nginx配置模板 
