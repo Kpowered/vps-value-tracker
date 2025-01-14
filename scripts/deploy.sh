@@ -37,39 +37,16 @@ install_system_dependencies() {
     case $os_type in
         "ubuntu"|"debian")
             sudo apt-get update
-            sudo apt-get install -y curl git
+            sudo apt-get install -y curl git nodejs npm mongodb
             ;;
         "centos"|"rhel"|"fedora")
-            sudo yum install -y curl git
+            sudo yum install -y curl git nodejs npm mongodb-server
             ;;
         *)
             echo -e "${RED}不支持的操作系统类型${NC}"
             exit 1
             ;;
     esac
-}
-
-# 安装Docker
-install_docker() {
-    echo -e "${YELLOW}正在安装Docker...${NC}"
-    curl -fsSL https://get.docker.com | sh
-    sudo systemctl enable docker
-    sudo systemctl start docker
-    
-    # 添加当前用户到docker组
-    sudo usermod -aG docker $USER
-    
-    echo -e "${GREEN}Docker安装完成${NC}"
-}
-
-# 安装Docker Compose
-install_docker_compose() {
-    echo -e "${YELLOW}正在安装Docker Compose...${NC}"
-    
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-    
-    echo -e "${GREEN}Docker Compose安装完成${NC}"
 }
 
 # 检查并安装依赖
@@ -82,16 +59,16 @@ check_and_install_dependencies() {
         missing_deps+=("git")
     fi
     
-    # 检查Docker
-    if ! command -v docker &> /dev/null; then
-        echo -e "${YELLOW}未安装Docker${NC}"
-        missing_deps+=("docker")
+    # 检查Node.js
+    if ! command -v node &> /dev/null; then
+        echo -e "${YELLOW}未安装Node.js${NC}"
+        missing_deps+=("nodejs")
     fi
     
-    # 检查Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        echo -e "${YELLOW}未安装Docker Compose${NC}"
-        missing_deps+=("docker-compose")
+    # 检查MongoDB
+    if ! command -v mongod &> /dev/null; then
+        echo -e "${YELLOW}未安装MongoDB${NC}"
+        missing_deps+=("mongodb")
     fi
     
     # 如果有缺失的依赖，询问是否安装
@@ -102,24 +79,7 @@ check_and_install_dependencies() {
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             install_system_dependencies
-            
-            for dep in "${missing_deps[@]}"; do
-                case $dep in
-                    "docker")
-                        install_docker
-                        ;;
-                    "docker-compose")
-                        install_docker_compose
-                        ;;
-                esac
-            done
-            
             echo -e "${GREEN}所有依赖安装完成${NC}"
-            # 提示用户重新登录以应用docker组更改
-            if [[ " ${missing_deps[@]} " =~ " docker " ]]; then
-                echo -e "${YELLOW}请重新登录以使Docker权限生效${NC}"
-                exit 0
-            fi
         else
             echo -e "${RED}请手动安装缺失的依赖后再试${NC}"
             exit 1
@@ -142,110 +102,52 @@ check_workspace() {
     fi
 }
 
-# 验证环境变量
-validate_env() {
-    local missing_vars=()
+# 安装项目依赖
+install_project_dependencies() {
+    echo -e "${YELLOW}安装后端依赖...${NC}"
+    cd backend
+    npm install
+    cd ..
     
-    # 检查必要的环境变量
-    if [ -z "$MONGODB_URI" ]; then missing_vars+=("MONGODB_URI"); fi
-    if [ -z "$JWT_SECRET" ]; then missing_vars+=("JWT_SECRET"); fi
-    if [ -z "$FIXER_API_KEY" ]; then missing_vars+=("FIXER_API_KEY"); fi
-    
-    if [ ${#missing_vars[@]} -ne 0 ]; then
-        echo -e "${RED}缺少必要的环境变量：${NC}"
-        printf '%s\n' "${missing_vars[@]}"
-        return 1
-    fi
-    
-    return 0
-}
-
-# 配置环境变量
-setup_env() {
-    echo -e "${YELLOW}配置环境变量...${NC}"
-    
-    if [ ! -f .env ]; then
-        cp .env.example .env
-        echo -e "${GREEN}已创建.env文件，请编辑以下必要的配置信息：${NC}"
-        echo "MONGODB_URI - MongoDB连接地址"
-        echo "JWT_SECRET - JWT密钥"
-        echo "FIXER_API_KEY - Fixer.io API密钥"
-        exit 0
-    else
-        echo -e "${YELLOW}检测到已存在的.env文件${NC}"
-        if ! validate_env; then
-            read -p "是否重新配置？(y/n) " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                cp .env.example .env
-                echo -e "${GREEN}已重新创建.env文件，请编辑配置信息${NC}"
-                exit 0
-            else
-                echo -e "${RED}请确保所有必要的环境变量都已正确配置${NC}"
-                exit 1
-            fi
-        fi
-    fi
+    echo -e "${YELLOW}安装前端依赖...${NC}"
+    cd frontend
+    npm install
+    npm run build
+    cd ..
 }
 
 # 启动服务
 start_services() {
     echo -e "${YELLOW}启动服务...${NC}"
     
-    # 检查是否在项目目录中
-    if [ ! -f "docker-compose.yml" ]; then
-        if [ -d "$PROJECT_DIR" ]; then
-            cd "$PROJECT_DIR"
-        else
-            echo -e "${RED}错误: 找不到项目目录，请先运行安装命令${NC}"
-            exit 1
-        fi
-    fi
+    # 启动MongoDB
+    sudo systemctl start mongodb
     
-    # 检查必要文件
-    if [ ! -f "docker-compose.yml" ]; then
-        echo -e "${RED}错误: 找不到 docker-compose.yml 文件${NC}"
-        exit 1
-    fi
+    # 启动后端服务
+    cd backend
+    npm start &
+    cd ..
     
-    if [ ! -f ".env" ]; then
-        echo -e "${RED}错误: 找不到 .env 文件，请先配置环境变量${NC}"
-        exit 1
-    fi
+    # 启动前端服务
+    cd frontend
+    npm run serve &
+    cd ..
     
-    # 构建并启动容器
-    docker-compose up -d --build
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}服务启动成功！${NC}"
-        echo -e "现在您可以访问: http://localhost:3000"
-    else
-        echo -e "${RED}服务启动失败，请检查日志${NC}"
-        exit 1
-    fi
+    echo -e "${GREEN}服务启动成功！${NC}"
+    echo -e "后端服务: http://localhost:3000"
+    echo -e "前端服务: http://localhost:8080"
 }
 
 # 停止服务
 stop_services() {
     echo -e "${YELLOW}停止服务...${NC}"
     
-    # 检查是否在项目目录中
-    if [ ! -f "docker-compose.yml" ]; then
-        if [ -d "$PROJECT_DIR" ]; then
-            cd "$PROJECT_DIR"
-        else
-            echo -e "${RED}错误: 找不到项目目录${NC}"
-            exit 1
-        fi
-    fi
+    # 查找并终止Node.js进程
+    pkill -f "node"
     
-    # 检查docker-compose.yml文件
-    if [ ! -f "docker-compose.yml" ]; then
-        echo -e "${RED}错误: 找不到 docker-compose.yml 文件${NC}"
-        exit 1
-    fi
+    # 停止MongoDB
+    sudo systemctl stop mongodb
     
-    docker-compose down
     echo -e "${GREEN}服务已停止${NC}"
 }
 
@@ -253,8 +155,8 @@ stop_services() {
 uninstall() {
     echo -e "${YELLOW}正在卸载...${NC}"
     
-    # 停止并删除容器
-    docker-compose down -v
+    # 停止服务
+    stop_services
     
     # 删除项目文件
     read -p "是否删除项目文件？(y/n) " -n 1 -r
@@ -291,7 +193,7 @@ main() {
             "install")
                 check_and_install_dependencies
                 check_workspace
-                setup_env
+                install_project_dependencies
                 start_services
                 ;;
             "start")
@@ -323,7 +225,7 @@ main() {
                 1)
                     check_and_install_dependencies
                     check_workspace
-                    setup_env
+                    install_project_dependencies
                     start_services
                     read -p "按Enter继续..."
                     ;;
