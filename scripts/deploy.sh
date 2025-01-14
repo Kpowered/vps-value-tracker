@@ -248,7 +248,7 @@ show_help() {
 
 # 主函数
 main() {
-    if [ "$1" ]; then
+    if [ -n "$1" ]; then
         case "$1" in
             "install")
                 check_and_install_dependencies
@@ -269,7 +269,7 @@ main() {
             "uninstall")
                 uninstall
                 ;;
-            "help"|"")
+            "help")
                 show_help
                 ;;
             *)
