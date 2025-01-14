@@ -47,6 +47,42 @@
 - MongoDB 4+
 - Docker (可选)
 
+### 脚本安装（推荐）
+
+1. 下载安装脚本
+
+    ```bash
+    curl -O https://raw.githubusercontent.com/Kpowered/vps-value-tracker/main/scripts/deploy.sh
+    chmod +x deploy.sh
+    ```
+
+2. 运行安装
+
+    ```bash
+    ./deploy.sh install
+    ```
+
+3. 配置环境变量
+
+    ```bash
+    # 编辑.env文件，设置必要的环境变量
+    vim .env
+    ```
+
+4. 启动服务
+
+    ```bash
+    ./deploy.sh start
+    ```
+
+其他常用命令：
+```bash
+./deploy.sh stop      # 停止服务
+./deploy.sh restart   # 重启服务
+./deploy.sh uninstall # 卸载服务
+./deploy.sh help      # 显示帮助信息
+```
+
 ### Docker部署
 
 1. 克隆项目
