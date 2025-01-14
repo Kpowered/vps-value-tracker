@@ -52,7 +52,7 @@
 1. 克隆项目
 
     ```bash
-    git clone https://github.com/yourusername/vps-value-tracker.git
+    git clone https://github.com/Kpowered/vps-value-tracker.git
     cd vps-value-tracker
     ```
 
@@ -170,7 +170,7 @@ MIT License
 
 ## 作者
 
-[@yourusername](https://github.com/yourusername)
+[@Kpowered](https://github.com/Kpowered)
 
 ## 致谢
 
