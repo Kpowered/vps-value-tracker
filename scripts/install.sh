@@ -645,6 +645,216 @@ Route::middleware('auth')->group(function () {
 });
 EOF
 
+# 创建认证控制器目录
+mkdir -p app/Http/Controllers/Auth
+
+# 创建 AuthenticatedSessionController
+cat > app/Http/Controllers/Auth/AuthenticatedSessionController.php << 'EOF'
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class AuthenticatedSessionController extends Controller
+{
+    public function create()
+    {
+        return view('auth.login');
+    }
+
+    public function store(LoginRequest $request)
+    {
+        $request->authenticate();
+        $request->session()->regenerate();
+        return redirect()->intended('/');
+    }
+
+    public function destroy(Request $request)
+    {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        return redirect('/');
+    }
+}
+EOF
+
+# 创建 LoginRequest
+mkdir -p app/Http/Requests/Auth
+cat > app/Http/Requests/Auth/LoginRequest.php << 'EOF'
+<?php
+
+namespace App\Http\Requests\Auth;
+
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class LoginRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
+    public function authenticate(): void
+    {
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+    }
+}
+EOF
+
+# 创建 User 模型
+cat > app/Models/User.php << 'EOF'
+<?php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable
+{
+    use Notifiable;
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+}
+EOF
+
+# 创建认证视图目录
+mkdir -p resources/views/auth
+
+# 创建登录视图
+cat > resources/views/auth/login.blade.php << 'EOF'
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+    <h2 class="text-2xl font-bold mb-6">Login</h2>
+
+    <form method="POST" action="{{ route('login') }}">
+        @csrf
+
+        <div class="mb-4">
+            <label for="email" class="block text-gray-700 mb-2">Email</label>
+            <input type="email" name="email" id="email" class="form-input w-full rounded" required autofocus>
+        </div>
+
+        <div class="mb-4">
+            <label for="password" class="block text-gray-700 mb-2">Password</label>
+            <input type="password" name="password" id="password" class="form-input w-full rounded" required>
+        </div>
+
+        <div class="mb-6">
+            <label class="flex items-center">
+                <input type="checkbox" name="remember" class="form-checkbox">
+                <span class="ml-2">Remember me</span>
+            </label>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Login
+        </button>
+    </form>
+</div>
+@endsection
+EOF
+
+# 创建用户表迁移
+cat > database/migrations/2014_10_12_000000_create_users_table.php << 'EOF'
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+    }
+};
+EOF
+
+# 创建 make:admin 命令
+mkdir -p app/Console/Commands
+cat > app/Console/Commands/MakeAdmin.php << 'EOF'
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\User;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Hash;
+
+class MakeAdmin extends Command
+{
+    protected $signature = 'make:admin';
+    protected $description = 'Create an admin user';
+
+    public function handle()
+    {
+        $name = $this->ask('What is the admin name?');
+        $email = $this->ask('What is the admin email?');
+        $password = $this->secret('What is the admin password?');
+
+        User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => Hash::make($password),
+        ]);
+
+        $this->info('Admin user created successfully!');
+    }
+}
+EOF
+
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
 if [ -n "$domain" ]; then
