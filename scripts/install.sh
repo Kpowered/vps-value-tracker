@@ -104,7 +104,9 @@ dbuser=${dbuser:-vps_user}
 read -s -p "请输入数据库密码: " dbpass
 echo
 
+# 删除并重新创建用户和数据库
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS ${dbname};"
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP USER IF EXISTS '${dbuser}'@'localhost';"
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE USER IF NOT EXISTS '${dbuser}'@'localhost' IDENTIFIED BY '${dbpass}';"
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON ${dbname}.* TO '${dbuser}'@'localhost';"
 mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
@@ -496,7 +498,7 @@ chmod -R 755 /var/www/vps-value-tracker
 chmod -R 775 storage bootstrap/cache
 
 # 运行数据库迁移
-php artisan migrate --force
+php artisan migrate:fresh --force
 
 # 创建管理员账户
 echo -e "${YELLOW}创建管理员账户${NC}"
@@ -939,6 +941,45 @@ class MakeAdmin extends Command
     }
 }
 EOF
+
+# 创建 Kernel.php
+cat > app/Console/Kernel.php << 'EOF'
+<?php
+
+namespace App\Console;
+
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+
+class Kernel extends ConsoleKernel
+{
+    protected $commands = [
+        \App\Console\Commands\MakeAdmin::class,
+    ];
+
+    protected function schedule(Schedule $schedule)
+    {
+        // $schedule->command('inspire')->hourly();
+    }
+
+    protected function commands()
+    {
+        $this->load(__DIR__.'/Commands');
+        require base_path('routes/console.php');
+    }
+}
+EOF
+
+# 更新 .env 文件
+sed -i "s/DB_DATABASE=.*/DB_DATABASE=${dbname}/" .env
+sed -i "s/DB_USERNAME=.*/DB_USERNAME=${dbuser}/" .env
+sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${dbpass}/" .env
+
+# 清除缓存
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
 
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
