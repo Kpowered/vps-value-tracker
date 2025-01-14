@@ -192,6 +192,27 @@ setup_env() {
 start_services() {
     echo -e "${YELLOW}启动服务...${NC}"
     
+    # 检查是否在项目目录中
+    if [ ! -f "docker-compose.yml" ]; then
+        if [ -d "$PROJECT_DIR" ]; then
+            cd "$PROJECT_DIR"
+        else
+            echo -e "${RED}错误: 找不到项目目录，请先运行安装命令${NC}"
+            exit 1
+        fi
+    fi
+    
+    # 检查必要文件
+    if [ ! -f "docker-compose.yml" ]; then
+        echo -e "${RED}错误: 找不到 docker-compose.yml 文件${NC}"
+        exit 1
+    fi
+    
+    if [ ! -f ".env" ]; then
+        echo -e "${RED}错误: 找不到 .env 文件，请先配置环境变量${NC}"
+        exit 1
+    fi
+    
     # 构建并启动容器
     docker-compose up -d --build
     
@@ -207,6 +228,23 @@ start_services() {
 # 停止服务
 stop_services() {
     echo -e "${YELLOW}停止服务...${NC}"
+    
+    # 检查是否在项目目录中
+    if [ ! -f "docker-compose.yml" ]; then
+        if [ -d "$PROJECT_DIR" ]; then
+            cd "$PROJECT_DIR"
+        else
+            echo -e "${RED}错误: 找不到项目目录${NC}"
+            exit 1
+        fi
+    fi
+    
+    # 检查docker-compose.yml文件
+    if [ ! -f "docker-compose.yml" ]; then
+        echo -e "${RED}错误: 找不到 docker-compose.yml 文件${NC}"
+        exit 1
+    fi
+    
     docker-compose down
     echo -e "${GREEN}服务已停止${NC}"
 }
