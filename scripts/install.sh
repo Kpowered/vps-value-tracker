@@ -434,6 +434,71 @@ fi
 # 配置定时任务
 echo "* * * * * cd /var/www/vps-value-tracker && php artisan schedule:run >> /dev/null 2>&1" | crontab -
 
+# 创建迁移文件
+mkdir -p database/migrations
+
+# VPS 表迁移
+cat > database/migrations/2024_01_14_000001_create_vps_table.php << 'EOF'
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateVpsTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('vps', function (Blueprint $table) {
+            $table->id();
+            $table->string('vendor_name');
+            $table->string('cpu_model');
+            $table->integer('cpu_cores');
+            $table->integer('memory_gb');
+            $table->integer('storage_gb');
+            $table->integer('bandwidth_gb');
+            $table->decimal('price', 10, 2);
+            $table->string('currency', 3);
+            $table->timestamp('start_date')->useCurrent();
+            $table->timestamp('end_date');
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('vps');
+    }
+}
+EOF
+
+# 汇率表迁移
+cat > database/migrations/2024_01_14_000002_create_exchange_rates_table.php << 'EOF'
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateExchangeRatesTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('exchange_rates', function (Blueprint $table) {
+            $table->id();
+            $table->string('currency', 3);
+            $table->decimal('rate', 10, 4);
+            $table->timestamp('updated_at');
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('exchange_rates');
+    }
+}
+EOF
+
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
 if [ -n "$domain" ]; then
