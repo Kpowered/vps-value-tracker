@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:4.4
+    container_name: vps-tracker-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - vps-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vps-tracker-backend
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/vps-tracker
+    depends_on:
+      - mongodb
+    ports:
+      - "3000:3000"
+    networks:
+      - vps-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vps-tracker-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - vps-network
+
+networks:
+  vps-network:
+    driver: bridge
+
+volumes:
+  mongodb_data: 

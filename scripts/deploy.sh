@@ -10,17 +10,16 @@ NC='\033[0m'
 # 项目配置
 REPO_URL="https://github.com/Kpowered/vps-value-tracker.git"
 PROJECT_DIR="vps-value-tracker"
-SERVICE_NAME="vps-tracker"
 
 # 显示帮助信息
 show_help() {
     echo "用法: $0 [命令]"
     echo "命令:"
-    echo "  install    - 安装服务"
-    echo "  start      - 启动服务"
-    echo "  stop       - 停止服务"
-    echo "  restart    - 重启服务"
-    echo "  uninstall  - 卸载服务"
+    echo "  up         - 启动 Docker 服务"
+    echo "  down       - 停止 Docker 服务"
+    echo "  build      - 构建 Docker 镜像"
+    echo "  logs       - 查看服务日志"
+    echo "  clean      - 清理 Docker 资源"
 }
 
 # 显示菜单
@@ -28,11 +27,11 @@ show_menu() {
     clear
     echo -e "${BLUE}VPS Value Tracker 部署工具${NC}"
     echo "------------------------"
-    echo "1) 安装服务"
-    echo "2) 启动服务"
-    echo "3) 停止服务"
-    echo "4) 重启服务"
-    echo "5) 卸载服务"
+    echo "1) 启动服务"
+    echo "2) 停止服务"
+    echo "3) 重新构建"
+    echo "4) 查看日志"
+    echo "5) 清理资源"
     echo "6) 退出"
     echo
     read -p "请选择操作 [1-6]: " choice
@@ -42,13 +41,13 @@ show_menu() {
 check_requirements() {
     echo -e "${YELLOW}检查系统要求...${NC}"
     
-    if ! command -v go >/dev/null 2>&1; then
-        echo -e "${RED}未安装Go！${NC}"
+    if ! command -v docker >/dev/null 2>&1; then
+        echo -e "${RED}未安装Docker！${NC}"
         return 1
     fi
     
-    if ! command -v mongod >/dev/null 2>&1; then
-        echo -e "${RED}未安装MongoDB！${NC}"
+    if ! command -v docker-compose >/dev/null 2>&1; then
+        echo -e "${RED}未安装Docker Compose！${NC}"
         return 1
     fi
     
@@ -65,16 +64,39 @@ install_dependencies() {
         case $ID in
             "ubuntu"|"debian")
                 sudo apt-get update
-                sudo apt-get install -y curl git golang mongodb nginx
+                # 安装Docker
+                curl -fsSL https://get.docker.com | sh
+                sudo usermod -aG docker $USER
+                
+                # 安装Docker Compose
+                sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
                 ;;
             "centos"|"rhel"|"fedora")
-                sudo yum install -y curl git golang mongodb-server nginx
+                # 安装Docker
+                sudo yum install -y yum-utils
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                sudo yum install -y docker-ce docker-ce-cli containerd.io
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                sudo usermod -aG docker $USER
+                
+                # 安装Docker Compose
+                sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
                 ;;
             *)
                 echo -e "${RED}不支持的操作系统类型${NC}"
                 return 1
                 ;;
         esac
+        
+        # 验证Docker安装
+        echo -e "${YELLOW}验证安装...${NC}"
+        docker --version
+        docker-compose --version
+        
+        echo -e "${GREEN}依赖安装完成${NC}"
     else
         echo -e "${RED}无法确定操作系统类型${NC}"
         return 1
@@ -94,69 +116,36 @@ clone_repo() {
     fi
 }
 
-# 构建项目
-build_project() {
+# 构建Docker镜像
+build_images() {
     echo -e "${YELLOW}构建项目...${NC}"
-    
-    cd backend || return 1
-    go mod tidy
-    go build -o "$SERVICE_NAME" ./cmd/server
-    
-    cd ../frontend || return 1
-    npm install
-    npm run build
-    
-    cd ..
-}
-
-# 配置服务
-setup_service() {
-    echo -e "${YELLOW}配置服务...${NC}"
-    
-    cat > /tmp/vps-tracker.service << EOF
-[Unit]
-Description=VPS Value Tracker
-After=network.target mongodb.service
-
-[Service]
-Type=simple
-User=$USER
-WorkingDirectory=$(pwd)/backend
-ExecStart=$(pwd)/backend/$SERVICE_NAME
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    sudo mv /tmp/vps-tracker.service /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable $SERVICE_NAME
+    docker-compose build
 }
 
 # 启动服务
-start_service() {
+start_services() {
     echo -e "${YELLOW}启动服务...${NC}"
-    sudo systemctl start mongodb
-    sudo systemctl start $SERVICE_NAME
+    docker-compose up -d
     echo -e "${GREEN}服务已启动${NC}"
 }
 
 # 停止服务
-stop_service() {
+stop_services() {
     echo -e "${YELLOW}停止服务...${NC}"
-    sudo systemctl stop $SERVICE_NAME
-    sudo systemctl stop mongodb
+    docker-compose down
     echo -e "${GREEN}服务已停止${NC}"
 }
 
-# 卸载服务
-uninstall_service() {
-    echo -e "${YELLOW}卸载服务...${NC}"
-    stop_service
-    sudo systemctl disable $SERVICE_NAME
-    sudo rm -f /etc/systemd/system/$SERVICE_NAME.service
-    sudo systemctl daemon-reload
+# 查看日志
+show_logs() {
+    echo -e "${YELLOW}显示服务日志...${NC}"
+    docker-compose logs -f
+}
+
+# 清理资源
+clean_resources() {
+    echo -e "${YELLOW}清理Docker资源...${NC}"
+    docker-compose down -v --rmi all
     
     read -p "是否删除项目文件？(y/n) " -n 1 -r
     echo
@@ -165,36 +154,30 @@ uninstall_service() {
         rm -rf "$PROJECT_DIR"
         echo -e "${GREEN}项目文件已删除${NC}"
     fi
-}
-
-# 安装服务
-install_service() {
-    check_requirements && \
-    install_dependencies && \
-    clone_repo && \
-    build_project && \
-    setup_service && \
-    start_service
+    
+    echo -e "${GREEN}清理完成${NC}"
 }
 
 # 主函数
 main() {
     if [ $# -gt 0 ]; then
         case "$1" in
-            install)
-                install_service
+            up)
+                check_requirements && \
+                clone_repo && \
+                docker-compose up -d
                 ;;
-            start)
-                start_service
+            down)
+                docker-compose down
                 ;;
-            stop)
-                stop_service
+            build)
+                docker-compose build
                 ;;
-            restart)
-                stop_service && start_service
+            logs)
+                docker-compose logs -f
                 ;;
-            uninstall)
-                uninstall_service
+            clean)
+                clean_resources
                 ;;
             *)
                 show_help
@@ -206,23 +189,25 @@ main() {
             show_menu
             case $choice in
                 1)
-                    install_service
+                    check_requirements && \
+                    clone_repo && \
+                    docker-compose up -d
                     read -p "按Enter继续..."
                     ;;
                 2)
-                    start_service
+                    docker-compose down
                     read -p "按Enter继续..."
                     ;;
                 3)
-                    stop_service
+                    docker-compose build
                     read -p "按Enter继续..."
                     ;;
                 4)
-                    stop_service && start_service
+                    docker-compose logs -f
                     read -p "按Enter继续..."
                     ;;
                 5)
-                    uninstall_service
+                    clean_resources
                     read -p "按Enter继续..."
                     ;;
                 6)
