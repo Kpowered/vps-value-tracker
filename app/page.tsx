@@ -14,9 +14,10 @@ import {
   useToast,
   Text,
   Flex,
-  Spinner
+  Spinner,
+  HStack
 } from '@chakra-ui/react'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn, signOut } from 'next-auth/react'
 import { format } from 'date-fns'
 import axios from 'axios'
 
@@ -90,7 +91,7 @@ export default function Home() {
   }
 
   const convertToCNY = (amount: number, currency: string) => {
-    if (currency === 'CNY') return amount
+    if (currency === 'CNY') return amount.toFixed(2)
     const rate = rates[currency]
     return rate ? (amount / rate).toFixed(2) : '暂无汇率'
   }
@@ -105,13 +106,20 @@ export default function Home() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <Flex justify="space-between" mb={6}>
+      <Flex justify="space-between" mb={6} align="center">
         <Text fontSize="2xl">VPS 列表</Text>
-        {session && (
-          <Button colorScheme="blue" onClick={() => window.location.href = '/add'}>
-            添加 VPS
-          </Button>
-        )}
+        <HStack spacing={4}>
+          {session ? (
+            <>
+              <Button colorScheme="blue" onClick={() => window.location.href = '/add'}>
+                添加 VPS
+              </Button>
+              <Button onClick={() => signOut()}>退出登录</Button>
+            </>
+          ) : (
+            <Button onClick={() => signIn()}>登录</Button>
+          )}
+        </HStack>
       </Flex>
 
       <Box overflowX="auto">
