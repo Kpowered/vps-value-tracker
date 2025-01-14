@@ -36,37 +36,43 @@ echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.
 
 # 添加 MySQL 仓库
 echo -e "${YELLOW}添加 MySQL 仓库...${NC}"
-wget https://repo.mysql.com/mysql-apt-config_0.8.24-1_all.deb
-DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb
+curl -fsSL https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 | gpg --dearmor -o /usr/share/keyrings/mysql.gpg
+echo "deb [signed-by=/usr/share/keyrings/mysql.gpg] http://repo.mysql.com/apt/debian $(lsb_release -sc) mysql-8.0" > /etc/apt/sources.list.d/mysql.list
+
+# 更新软件包列表
 apt-get update
 
 # 安装 MySQL
 echo -e "${YELLOW}安装 MySQL...${NC}"
-DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-community-server
+DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
 
 # 确保 MySQL 服务启动
 echo -e "${YELLOW}启动 MySQL 服务...${NC}"
-systemctl enable mysql || systemctl enable mysqld
-systemctl start mysql || systemctl start mysqld
+systemctl enable mysql
+systemctl start mysql
 
-# 等待 MySQL 启动
+# 等待 MySQL 启动（最多等待 30 秒）
 echo -e "${YELLOW}等待 MySQL 启动...${NC}"
-while ! mysqladmin ping -s; do
+counter=0
+while ! systemctl is-active --quiet mysql && [ $counter -lt 30 ]; do
     sleep 1
+    ((counter++))
 done
+
+if ! systemctl is-active --quiet mysql; then
+    echo -e "${RED}MySQL 启动失败${NC}"
+    exit 1
+fi
 
 # 设置 MySQL root 密码
 echo -e "${YELLOW}配置 MySQL...${NC}"
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
 
-# 尝试不同的 MySQL 密码设置方法
-if mysql -u root -e "SELECT 1;" 2>/dev/null; then
-    # MySQL 没有密码，直接设置
-    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
-else
-    # 尝试使用 mysqladmin
-    mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
-fi
+# 尝试设置 root 密码
+mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';" || {
+    echo -e "${RED}MySQL root 密码设置失败${NC}"
+    exit 1
+}
 
 # 验证 MySQL 连接
 if ! mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" 2>/dev/null; then
