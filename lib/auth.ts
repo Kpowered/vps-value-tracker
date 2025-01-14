@@ -1,7 +1,22 @@
 import type { NextAuthOptions } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
+import type { Session } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from './prisma'
+
+// 扩展 Session 类型
+interface CustomSession extends Session {
+  user: {
+    id: string
+    email: string
+  }
+}
+
+// 扩展 JWT 类型
+interface CustomJWT extends JWT {
+  id?: string
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -33,7 +48,7 @@ export const authOptions: NextAuthOptions = {
 
           return {
             id: user.id,
-            email: 'admin@example.com' // NextAuth 需要一个唯一标识符
+            email: 'admin@example.com'
           }
         } catch (error) {
           console.error('Auth error:', error)
@@ -50,20 +65,21 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login'
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<CustomJWT> {
       if (user) {
         token.id = user.id
       }
       return token
     },
-    async session({ session, token }) {
-      if (token) {
-        session.user = {
+    async session({ session, token }): Promise<CustomSession> {
+      return {
+        ...session,
+        user: {
+          ...session.user,
           id: token.id as string,
           email: 'admin@example.com'
         }
       }
-      return session
     }
   },
   debug: process.env.NODE_ENV === 'development'
