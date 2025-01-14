@@ -35,7 +35,7 @@
 1. 克隆仓库
 
     ```bash
-    git clone https://github.com/yourusername/vps-value-tracker.git
+    git clone https://github.com/Kpowered/vps-value-tracker.git
     cd vps-value-tracker
     ```
 
@@ -202,5 +202,5 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 联系方式
 
-- 项目地址：[GitHub](https://github.com/yourusername/vps-value-tracker)
+- 项目地址：[GitHub](https://github.com/Kpowered/vps-value-tracker)
 - 问题反馈：请使用 GitHub Issues 
