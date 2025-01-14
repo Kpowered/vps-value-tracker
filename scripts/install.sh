@@ -13,41 +13,63 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 检测系统版本
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$NAME
+    VER=$VERSION_ID
+else
+    echo "无法检测操作系统版本"
+    exit 1
+fi
+
+echo -e "${YELLOW}检测到操作系统: $OS $VER${NC}"
+
+# 安装基础工具
+apt-get update
+apt-get install -y curl wget gnupg2 ca-certificates lsb-release apt-transport-https software-properties-common
+
 # 添加 PHP 仓库
 echo -e "${YELLOW}添加 PHP 仓库...${NC}"
-apt-get install -y software-properties-common
-add-apt-repository -y ppa:ondrej/php
-add-apt-repository -y ppa:ondrej/nginx
+curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
 
 # 添加 MySQL 仓库
 echo -e "${YELLOW}添加 MySQL 仓库...${NC}"
-wget https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb
-DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb
-rm mysql-apt-config_0.8.24-1_all.deb
+curl -sSLo mysql-apt-config.deb https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config.deb
+rm mysql-apt-config.deb
+
+# 添加 Nginx 仓库
+echo -e "${YELLOW}添加 Nginx 仓库...${NC}"
+curl -sSLo /usr/share/keyrings/nginx-archive-keyring.gpg https://nginx.org/keys/nginx_signing.key
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian $(lsb_release -sc) nginx" > /etc/apt/sources.list.d/nginx.list
 
 # 更新软件包列表
 apt-get update
 
-# 安装基础依赖
-echo -e "${YELLOW}正在安装系统依赖...${NC}"
-DEBIAN_FRONTEND=noninteractive apt-get install -y nginx mysql-server php8.1-fpm php8.1-mysql php8.1-mbstring \
-    php8.1-xml php8.1-curl php8.1-zip composer certbot python3-certbot-nginx git
+# 安装 MySQL
+echo -e "${YELLOW}安装 MySQL...${NC}"
+DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+
+# 安装 PHP 和其他依赖
+echo -e "${YELLOW}安装 PHP 和其他依赖...${NC}"
+apt-get install -y nginx php8.1-fpm php8.1-mysql php8.1-mbstring \
+    php8.1-xml php8.1-curl php8.1-zip php8.1-cli \
+    composer certbot python3-certbot-nginx git unzip
 
 # 确保 PHP-FPM 服务存在并启动
-if ! systemctl is-active --quiet php8.1-fpm; then
-    echo -e "${YELLOW}正在启动 PHP-FPM 服务...${NC}"
-    systemctl enable php8.1-fpm
-    systemctl start php8.1-fpm
-fi
+systemctl enable php8.1-fpm
+systemctl start php8.1-fpm
 
-# 配置MySQL
-echo -e "${YELLOW}正在配置MySQL...${NC}"
+# 确保 MySQL 服务启动
 systemctl enable mysql
 systemctl start mysql
 
 # 设置MySQL root密码
+echo -e "${YELLOW}配置 MySQL...${NC}"
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
-mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
+mysql --connect-expired-password -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
 
 # 创建数据库和用户
 read -p "请输入数据库名称 (默认: vps_tracker): " dbname
