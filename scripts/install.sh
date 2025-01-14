@@ -13,10 +13,24 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 添加 PHP 仓库
+echo -e "${YELLOW}添加 PHP 仓库...${NC}"
+apt-get install -y software-properties-common
+add-apt-repository -y ppa:ondrej/php
+add-apt-repository -y ppa:ondrej/nginx
+
+# 添加 MySQL 仓库
+echo -e "${YELLOW}添加 MySQL 仓库...${NC}"
+wget https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb
+DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb
+rm mysql-apt-config_0.8.24-1_all.deb
+
+# 更新软件包列表
+apt-get update
+
 # 安装基础依赖
 echo -e "${YELLOW}正在安装系统依赖...${NC}"
-apt-get update
-apt-get install -y nginx mysql-server php8.1-fpm php8.1-mysql php8.1-mbstring \
+DEBIAN_FRONTEND=noninteractive apt-get install -y nginx mysql-server php8.1-fpm php8.1-mysql php8.1-mbstring \
     php8.1-xml php8.1-curl php8.1-zip composer certbot python3-certbot-nginx git
 
 # 确保 PHP-FPM 服务存在并启动
@@ -30,7 +44,10 @@ fi
 echo -e "${YELLOW}正在配置MySQL...${NC}"
 systemctl enable mysql
 systemctl start mysql
-mysql_secure_installation
+
+# 设置MySQL root密码
+MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+mysqladmin -u root password "$MYSQL_ROOT_PASSWORD"
 
 # 创建数据库和用户
 read -p "请输入数据库名称 (默认: vps_tracker): " dbname
@@ -40,10 +57,14 @@ dbuser=${dbuser:-vps_user}
 read -s -p "请输入数据库密码: " dbpass
 echo
 
-mysql -e "CREATE DATABASE IF NOT EXISTS ${dbname};"
-mysql -e "CREATE USER IF NOT EXISTS '${dbuser}'@'localhost' IDENTIFIED BY '${dbpass}';"
-mysql -e "GRANT ALL PRIVILEGES ON ${dbname}.* TO '${dbuser}'@'localhost';"
-mysql -e "FLUSH PRIVILEGES;"
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS ${dbname};"
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE USER IF NOT EXISTS '${dbuser}'@'localhost' IDENTIFIED BY '${dbpass}';"
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON ${dbname}.* TO '${dbuser}'@'localhost';"
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
+
+# 保存 MySQL root 密码到安全位置
+echo "MySQL root 密码: $MYSQL_ROOT_PASSWORD" > /root/.mysql_root_password
+chmod 600 /root/.mysql_root_password
 
 # 克隆项目
 echo -e "${YELLOW}正在克隆项目...${NC}"
@@ -177,6 +198,7 @@ systemctl restart nginx
 systemctl restart php8.1-fpm
 
 echo -e "${GREEN}安装完成！${NC}"
+echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
 if [ -n "$domain" ]; then
     echo -e "请访问 https://${domain} 来使用您的VPS Value Tracker"
 else
