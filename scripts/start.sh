@@ -14,14 +14,12 @@ const { initDatabase } = require('./scripts/init-db');
 initDatabase(process.env.ADMIN_PASSWORD)
   .then(() => {
     console.log('Database initialized');
-    process.exit(0);
+    // 启动应用
+    console.log('Starting application...');
+    require('child_process').execSync('npm start', { stdio: 'inherit' });
   })
   .catch((error) => {
     console.error('Failed to initialize database:', error);
     process.exit(1);
   });
-"
-
-# 启动应用
-echo "Starting application..."
-npm start 
+" 

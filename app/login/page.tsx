@@ -26,11 +26,13 @@ export default function Login() {
     setLoading(true)
 
     try {
+      console.log('Attempting login...')
       const result = await signIn('credentials', {
         password,
-        redirect: false,
-        callbackUrl: '/'
+        redirect: false
       })
+
+      console.log('Login result:', result)
 
       if (result?.error) {
         toast({
@@ -40,10 +42,18 @@ export default function Login() {
           duration: 3000,
         })
       } else {
-        router.push('/')
-        router.refresh()
+        toast({
+          title: '登录成功',
+          status: 'success',
+          duration: 2000,
+        })
+        setTimeout(() => {
+          router.push('/')
+          router.refresh()
+        }, 1000)
       }
     } catch (error) {
+      console.error('Login error:', error)
       toast({
         title: '登录失败',
         description: '发生错误，请重试',

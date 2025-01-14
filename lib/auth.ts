@@ -5,19 +5,6 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from './prisma'
 
-// 扩展 Session 类型
-interface CustomSession extends Session {
-  user: {
-    id: string
-    email: string
-  }
-}
-
-// 扩展 JWT 类型
-interface CustomJWT extends JWT {
-  id?: string
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -32,20 +19,23 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
+          console.log('Finding user...')
           const user = await prisma.user.findFirst()
           
           if (!user) {
-            console.log('No user found')
+            console.log('No user found in database')
             return null
           }
 
+          console.log('Comparing passwords...')
           const isValid = await bcrypt.compare(credentials.password, user.password)
           
           if (!isValid) {
-            console.log('Invalid password')
+            console.log('Password comparison failed')
             return null
           }
 
+          console.log('Login successful')
           return {
             id: user.id,
             email: 'admin@example.com'
@@ -58,29 +48,23 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60 // 30 days
+    strategy: 'jwt'
   },
   pages: {
     signIn: '/login'
   },
   callbacks: {
-    async jwt({ token, user }): Promise<CustomJWT> {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
       }
       return token
     },
-    async session({ session, token }): Promise<CustomSession> {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id as string,
-          email: 'admin@example.com'
-        }
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string
       }
+      return session
     }
-  },
-  debug: process.env.NODE_ENV === 'development'
+  }
 } 
