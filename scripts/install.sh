@@ -19,8 +19,17 @@ apt-get update
 apt-get install -y nginx mysql-server php8.1-fpm php8.1-mysql php8.1-mbstring \
     php8.1-xml php8.1-curl php8.1-zip composer certbot python3-certbot-nginx git
 
+# 确保 PHP-FPM 服务存在并启动
+if ! systemctl is-active --quiet php8.1-fpm; then
+    echo -e "${YELLOW}正在启动 PHP-FPM 服务...${NC}"
+    systemctl enable php8.1-fpm
+    systemctl start php8.1-fpm
+fi
+
 # 配置MySQL
 echo -e "${YELLOW}正在配置MySQL...${NC}"
+systemctl enable mysql
+systemctl start mysql
 mysql_secure_installation
 
 # 创建数据库和用户
@@ -42,6 +51,11 @@ cd /var/www
 git clone https://github.com/Kpowered/vps-value-tracker.git
 cd vps-value-tracker
 
+# 创建必要的目录
+mkdir -p storage/framework/{sessions,views,cache}
+mkdir -p storage/logs
+mkdir -p bootstrap/cache
+
 # 配置项目
 echo -e "${YELLOW}正在配置项目...${NC}"
 cp .env.example .env
@@ -53,6 +67,11 @@ sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${dbpass}/" .env
 composer install --no-dev
 php artisan key:generate
 
+# 设置目录权限
+chown -R www-data:www-data /var/www/vps-value-tracker
+chmod -R 755 /var/www/vps-value-tracker
+chmod -R 775 storage bootstrap/cache
+
 # 运行数据库迁移
 php artisan migrate
 
@@ -63,6 +82,9 @@ php artisan make:admin
 # 配置Nginx
 echo -e "${YELLOW}正在配置Nginx...${NC}"
 read -p "请输入域名 (如果没有请直接回车): " domain
+
+# 删除默认的 Nginx 配置
+rm -f /etc/nginx/sites-enabled/default
 
 if [ -n "$domain" ]; then
     # 配置带域名的Nginx配置
@@ -144,10 +166,8 @@ EOF
     ln -s /etc/nginx/sites-available/vps-tracker /etc/nginx/sites-enabled/
 fi
 
-# 设置目录权限
-chown -R www-data:www-data /var/www/vps-value-tracker
-chmod -R 755 /var/www/vps-value-tracker
-chmod -R 777 /var/www/vps-value-tracker/storage
+# 测试 Nginx 配置
+nginx -t
 
 # 配置定时任务
 echo "* * * * * cd /var/www/vps-value-tracker && php artisan schedule:run >> /dev/null 2>&1" | crontab -
