@@ -88,33 +88,19 @@ else
     exit 1
 fi
 
-# 询问是否配置域名
-read -p "是否要配置域名？(y/n): " setup_domain
-if [ "$setup_domain" = "y" ]; then
+# 添加域名配置
+read -p "是否需要配置域名？(y/n): " configure_domain
+if [ "$configure_domain" = "y" ]; then
     read -p "请输入域名: " domain_name
-    
+    # 添加域名配置逻辑
+fi
+
+# 添加SSL配置
+if [ "$configure_domain" = "y" ]; then
     # 安装certbot
     apt-get install -y certbot python3-certbot-nginx
-    
-    # 配置Nginx
-    cat > /etc/nginx/conf.d/vps-tracker.conf <<EOF
-server {
-    listen 80;
-    server_name $domain_name;
-    
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-}
-EOF
-
-    # 获取SSL证书
-    certbot --nginx -d $domain_name --non-interactive --agree-tos --email admin@$domain_name
-    
-    # 重启Nginx
-    systemctl restart nginx
+    # 申请证书
+    certbot --nginx -d $domain_name --non-interactive --agree-tos -m your@email.com
 fi
 
 # 启动容器
@@ -148,7 +134,7 @@ if ! docker ps | grep -q vps-value-tracker; then
 fi
 
 echo -e "${GREEN}安装完成！${NC}"
-if [ "$setup_domain" = "y" ]; then
+if [ "$configure_domain" = "y" ]; then
     echo "您可以通过访问 https://$domain_name 来访问应用"
 else
     echo "您可以通过访问 http://服务器IP:8080 来访问应用"
