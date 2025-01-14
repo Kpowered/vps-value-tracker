@@ -10,6 +10,43 @@ import (
     "vps-tracker/models"
 )
 
+func (h *Handler) Register(c *gin.Context) {
+    var user models.User
+    if err := c.ShouldBindJSON(&user); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    // 检查用户名是否已存在
+    exists, err := h.db.Collection("users").CountDocuments(
+        context.Background(),
+        bson.M{"username": user.Username},
+    )
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking username"})
+        return
+    }
+    if exists > 0 {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
+        return
+    }
+
+    // 加密密码
+    if err := user.HashPassword(); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
+        return
+    }
+
+    // 保存用户
+    _, err = h.db.Collection("users").InsertOne(context.Background(), user)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+}
+
 func (h *Handler) Login(c *gin.Context) {
     var login struct {
         Username string `json:"username" binding:"required"`
