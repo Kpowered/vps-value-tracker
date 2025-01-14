@@ -500,9 +500,24 @@ chmod -R 775 storage bootstrap/cache
 # 运行数据库迁移
 php artisan migrate:fresh --force
 
+# 清除缓存
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+
 # 创建管理员账户
 echo -e "${YELLOW}创建管理员账户${NC}"
-php artisan make:admin
+password=$(openssl rand -base64 12)
+php artisan tinker << EOF
+use App\Models\User;
+User::truncate();
+User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => Hash::make('${password}')]);
+EOF
+
+echo -e "${GREEN}管理员账户创建成功！${NC}"
+echo -e "管理员密码: ${password}"
+echo -e "请保存此密码，它只会显示一次。"
 
 # 配置Nginx
 echo -e "${YELLOW}正在配置Nginx...${NC}"
@@ -983,6 +998,7 @@ php artisan view:clear
 
 echo -e "${GREEN}安装完成！${NC}"
 echo -e "MySQL root 密码已保存到 /root/.mysql_root_password"
+echo -e "管理员密码: ${password}"
 if [ -n "$domain" ]; then
     echo -e "请访问 https://${domain} 来使用您的VPS Value Tracker"
 else
