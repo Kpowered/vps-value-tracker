@@ -43,11 +43,15 @@ deploy() {
     # 生成数据库密码
     DB_PASSWORD=$(generate_password)
     
+    # 创建 Docker 网络（如果不存在）
+    docker network create vps-tracker-network 2>/dev/null || true
+    
+    # 停止并删除旧容器
+    docker stop mongodb vps-tracker 2>/dev/null || true
+    docker rm mongodb vps-tracker 2>/dev/null || true
+    
     # 构建镜像
     docker build -t vps-tracker .
-    
-    # 创建 Docker 网络
-    docker network create vps-tracker-network || true
     
     # 启动 MongoDB
     docker run -d \
@@ -61,10 +65,6 @@ deploy() {
     echo "等待 MongoDB 启动..."
     sleep 5
     
-    # 停止旧容器
-    docker stop vps-tracker || true
-    docker rm vps-tracker || true
-    
     # 启动新容器
     docker run -d \
         --name vps-tracker \
@@ -76,6 +76,13 @@ deploy() {
         -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
         vps-tracker
         
+    # 检查容器是否成功启动
+    if ! docker ps | grep -q vps-tracker; then
+        echo -e "${RED}应用启动失败，查看日志：${NC}"
+        docker logs vps-tracker
+        exit 1
+    fi
+    
     echo -e "${GREEN}部署完成${NC}"
     echo -e "${GREEN}访问地址: http://localhost${NC}"
     echo -e "${GREEN}管理员用户名: admin${NC}"

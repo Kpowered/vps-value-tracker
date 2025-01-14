@@ -3,6 +3,9 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 安装 OpenSSL
+RUN apk add --no-cache openssl
+
 # 安装依赖
 COPY package*.json ./
 RUN npm install
@@ -20,6 +23,9 @@ RUN npm run build
 FROM node:18-alpine
 
 WORKDIR /app
+
+# 安装 OpenSSL 和 netcat
+RUN apk add --no-cache openssl netcat-openbsd
 
 # 复制构建产物
 COPY --from=builder /app/.next ./.next

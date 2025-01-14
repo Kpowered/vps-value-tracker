@@ -2,7 +2,7 @@
 
 # 等待 MongoDB 就绪
 echo "Waiting for MongoDB..."
-while ! nc -z mongodb 27017; do
+while ! nc -w 1 mongodb 27017; do
   sleep 1
 done
 echo "MongoDB is ready"
