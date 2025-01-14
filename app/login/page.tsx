@@ -28,7 +28,8 @@ export default function Login() {
     try {
       const result = await signIn('credentials', {
         password,
-        redirect: false
+        redirect: false,
+        callbackUrl: '/'
       })
 
       if (result?.error) {
@@ -40,7 +41,15 @@ export default function Login() {
         })
       } else {
         router.push('/')
+        router.refresh()
       }
+    } catch (error) {
+      toast({
+        title: '登录失败',
+        description: '发生错误，请重试',
+        status: 'error',
+        duration: 3000,
+      })
     } finally {
       setLoading(false)
     }
@@ -58,6 +67,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="请输入管理密码"
             />
           </FormControl>
 

@@ -8,35 +8,63 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        password: { label: "Password", type: "password" }
+        password: { label: "密码", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.password) {
+        try {
+          if (!credentials?.password) {
+            console.log('No password provided')
+            return null
+          }
+
+          const user = await prisma.user.findFirst()
+          
+          if (!user) {
+            console.log('No user found')
+            return null
+          }
+
+          const isValid = await bcrypt.compare(credentials.password, user.password)
+          
+          if (!isValid) {
+            console.log('Invalid password')
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: 'admin@example.com' // NextAuth 需要一个唯一标识符
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
-        }
-
-        const user = await prisma.user.findFirst()
-
-        if (!user) {
-          return null
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isValid) {
-          return null
-        }
-
-        return {
-          id: user.id
         }
       }
     })
   ],
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60 // 30 days
   },
   pages: {
     signIn: '/login'
-  }
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user = {
+          id: token.id as string,
+          email: 'admin@example.com'
+        }
+      }
+      return session
+    }
+  },
+  debug: process.env.NODE_ENV === 'development'
 } 

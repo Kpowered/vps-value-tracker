@@ -8,9 +8,11 @@ async function initDatabase(adminPassword: string) {
     // 检查是否已存在用户
     const existingUser = await prisma.user.findFirst()
     
+    // 生成密码哈希
+    const hashedPassword = await bcrypt.hash(adminPassword, 10)
+    
     if (!existingUser) {
       // 创建管理员用户
-      const hashedPassword = await bcrypt.hash(adminPassword, 10)
       await prisma.user.create({
         data: {
           password: hashedPassword
@@ -19,7 +21,6 @@ async function initDatabase(adminPassword: string) {
       console.log('Admin user created successfully')
     } else {
       // 更新现有用户的密码
-      const hashedPassword = await bcrypt.hash(adminPassword, 10)
       await prisma.user.update({
         where: { id: existingUser.id },
         data: { password: hashedPassword }
