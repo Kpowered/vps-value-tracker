@@ -16,7 +16,6 @@
  汇率可以参考fixer.io的api,api key: e65a0dbfc190ce964f2771bca5c08e13
  汇率的调用每天一次就可以。
  页面样式可以参考https://fixer.io/的样式。
- 整个项目要可以部署到github pages上,部署到github pages上后,要能够访问到。
  整个项目也可以狠方便的部署到独立的vps上,vps的系统是debian 12.
  整个项目要能够使用docker部署,部署到vps上后,要能够访问到。
  整个项目最后要实现通过一个一键脚本部署到vps上,部署到vps上后,要能够访问到。

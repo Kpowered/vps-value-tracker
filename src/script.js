@@ -419,9 +419,48 @@ function restoreData(backupFile) {
     // 添加数据恢复功能
 }
 
+// 添加全局错误处理
+window.onerror = function(msg, url, line, col, error) {
+    console.error('Global error:', error);
+    showErrorNotification(`发生错误：${msg}`);
+    return false;
+};
+
+// 添加API错误处理
+function showErrorNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'error-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// 添加XSS防护
+function sanitizeInput(input) {
+    const div = document.createElement('div');
+    div.textContent = input;
+    return div.innerHTML;
+}
+
+// 添加CSRF保护
+const csrfToken = Math.random().toString(36).slice(2);
+localStorage.setItem('csrf_token', csrfToken);
+
 // 启动应用
 init(); 
 
 async function initDB() {
-    // 初始化IndexedDB
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('vps_data')) {
+                db.createObjectStore('vps_data', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+    });
 } 
