@@ -1,7 +1,0 @@
-:80 {
-    root * /usr/share/caddy
-    try_files {path} /index.html
-    file_server
-    
-    reverse_proxy /api/* backend:3000
-} 
