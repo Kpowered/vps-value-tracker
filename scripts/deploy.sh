@@ -49,6 +49,62 @@ cd /opt/vps-value-tracker
 
 # 创建必要的配置文件
 print_message "正在创建配置文件..."
+mkdir -p app
+cat > app/layout.tsx << 'EOL'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'VPS 价值追踪器',
+  description: '追踪你的VPS剩余价值',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="zh">
+      <body className={inter.className}>{children}</body>
+    </html>
+  )
+}
+EOL
+
+cat > app/globals.css << 'EOL'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+EOL
+
+cat > tailwind.config.js << 'EOL'
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+EOL
+
+cat > postcss.config.js << 'EOL'
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+EOL
+
 cat > package.json << 'EOL'
 {
   "name": "vps-value-tracker",
