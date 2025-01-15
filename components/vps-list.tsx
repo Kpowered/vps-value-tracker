@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { formatDistance } from 'date-fns'
-import zhCN from 'date-fns/locale/zh-CN'
+import { zhCN } from 'date-fns/locale'
 
 interface Vps {
   id: number
