@@ -1,12 +1,19 @@
-version: '3'
+version: '3.8'
+
 services:
   app:
-    build: .
+    image: kpowered/vps-value-tracker:latest
+    restart: always
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
-      - ./prisma/dev.db:/app/prisma/dev.db
-    restart: always 
+      - ./data:/app/prisma/data
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge 

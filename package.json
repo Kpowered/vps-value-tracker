@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "update-rates": "ts-node scripts/update-exchange-rates.ts"
+    "update-rates": "ts-node scripts/update-exchange-rates.ts",
+    "create-user": "ts-node scripts/create-user.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
