@@ -497,14 +497,14 @@ async def add_vps(vps_data: dict, session: str = Cookie(None)):
         except JWTError:
             raise HTTPException(status_code=401)
 
-        async with aiosqlite.connect(DB_PATH) as db:  # 使用正确的数据库路径
+        async with aiosqlite.connect(DB_PATH) as db:
             # 获取用户ID
             async with db.execute('SELECT id FROM users WHERE username = ?', [username]) as cursor:
                 user = await cursor.fetchone()
                 if not user:
                     raise HTTPException(status_code=401)
                     
-            # 添加VPS信息
+            # 添加VPS信息，确保数值类型正确
             try:
                 await db.execute('''
                     INSERT INTO vps (
@@ -513,14 +513,14 @@ async def add_vps(vps_data: dict, session: str = Cookie(None)):
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', [
                     vps_data.get("vendor_name"),
-                    int(vps_data.get("cpu_cores", 0)),
+                    float(vps_data.get("cpu_cores", 0)),  # 转换为float
                     vps_data.get("cpu_model", ""),
-                    int(vps_data.get("memory", 0)),
-                    int(vps_data.get("storage", 0)),
-                    int(vps_data.get("bandwidth", 0)),
+                    float(vps_data.get("memory", 0)),     # 转换为float
+                    float(vps_data.get("storage", 0)),    # 转换为float
+                    float(vps_data.get("bandwidth", 0)),  # 转换为float
                     float(vps_data.get("price", 0)),
                     vps_data.get("currency", "CNY"),
-                    vps_data.get("start_date", datetime.now().strftime("%Y-%m-%d")),  # 使用提交的开始日期
+                    vps_data.get("start_date", datetime.now().strftime("%Y-%m-%d")),
                     vps_data.get("end_date"),
                     user[0]
                 ])
@@ -528,12 +528,10 @@ async def add_vps(vps_data: dict, session: str = Cookie(None)):
                 return {"success": True}
             except Exception as e:
                 logger.error(f"Database error while adding VPS: {e}")
-                raise HTTPException(status_code=500, detail="Failed to add VPS")
-    except HTTPException:
-        raise
+                raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
-        logger.error(f"Error adding VPS: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Error in add_vps: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/vps")
 async def get_vps():
