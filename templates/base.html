@@ -539,6 +539,15 @@
             
             // 更新剩余价值
             updateRemainingValues();
+            
+            // 添加模态框关闭事件监听器
+            const addVpsModal = document.getElementById('addVpsModal');
+            addVpsModal.addEventListener('hidden.bs.modal', function () {
+                const form = document.getElementById('addVpsForm');
+                form.reset();
+                delete form.dataset.editId;
+                form.querySelector('button[type="submit"]').textContent = '添加';
+            });
         });
     </script>
 </body>
