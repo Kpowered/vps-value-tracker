@@ -632,3 +632,58 @@ async def upload_image(data: dict):
     except Exception as e:
         logger.error(f"Error saving image: {e}")
         raise HTTPException(status_code=500, detail="Failed to save image") 
+
+@app.get("/api/vps/{vps_id}")
+async def get_vps_by_id(vps_id: int, session: str = Cookie(None)):
+    if not session:
+        raise HTTPException(status_code=401)
+    
+    try:
+        payload = jwt.decode(session, SECRET_KEY)
+    except JWTError:
+        raise HTTPException(status_code=401)
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute('SELECT * FROM vps WHERE id = ?', [vps_id]) as cursor:
+            vps = await cursor.fetchone()
+            if vps:
+                return dict(vps)
+            raise HTTPException(status_code=404, detail="VPS not found")
+
+@app.put("/api/vps/{vps_id}")
+async def update_vps(vps_id: int, vps_data: dict, session: str = Cookie(None)):
+    if not session:
+        raise HTTPException(status_code=401)
+    
+    try:
+        payload = jwt.decode(session, SECRET_KEY)
+    except JWTError:
+        raise HTTPException(status_code=401)
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        try:
+            await db.execute('''
+                UPDATE vps SET 
+                    vendor_name = ?, cpu_cores = ?, cpu_model = ?, 
+                    memory = ?, storage = ?, bandwidth = ?,
+                    price = ?, currency = ?, start_date = ?, end_date = ?
+                WHERE id = ?
+            ''', [
+                vps_data.get("vendor_name"),
+                int(vps_data.get("cpu_cores", 0)),
+                vps_data.get("cpu_model", ""),
+                int(vps_data.get("memory", 0)),
+                int(vps_data.get("storage", 0)),
+                int(vps_data.get("bandwidth", 0)),
+                float(vps_data.get("price", 0)),
+                vps_data.get("currency", "CNY"),
+                vps_data.get("start_date"),
+                vps_data.get("end_date"),
+                vps_id
+            ])
+            await db.commit()
+            return {"success": True}
+        except Exception as e:
+            logger.error(f"Database error while updating VPS: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update VPS") 
