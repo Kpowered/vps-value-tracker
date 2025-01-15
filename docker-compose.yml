@@ -1,7 +1,8 @@
 version: '3'
 services:
   app:
-    image: kpowered/vps-value-tracker:latest
+    image: vps-value-tracker
+    build: .
     ports:
       - "80:80"
       - "443:443"

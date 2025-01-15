@@ -28,9 +28,9 @@ DOMAIN=$DOMAIN
 FIXER_API_KEY=$FIXER_API_KEY
 EOF
 
-# 拉取最新镜像
-echo "拉取最新镜像..."
-docker pull kpowered/vps-value-tracker:latest
+# 构建本地镜像
+echo "构建 Docker 镜像..."
+docker build -t vps-value-tracker .
 
 # 启动服务
 echo "启动服务..."
