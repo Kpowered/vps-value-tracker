@@ -32,8 +32,11 @@ check_requirements() {
 # 创建目录结构
 create_directories() {
     info "创建必要的目录..."
-    mkdir -p data static letsencrypt
-    touch acme.json
+    mkdir -p data static
+    # 创建并设置 acme.json 权限
+    if [ ! -f acme.json ]; then
+        touch acme.json
+    fi
     chmod 600 acme.json
     success "目录创建完成"
 }
@@ -54,22 +57,18 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--log.level=DEBUG"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=false"
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=\${EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
       - "--certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
       - "./acme.json:/acme.json"
     networks:
       - web
@@ -92,11 +91,9 @@ services:
       - "traefik.http.routers.vps.entrypoints=websecure"
       - "traefik.http.routers.vps.tls.certresolver=myresolver"
       - "traefik.http.services.vps.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       - "traefik.http.routers.vps-http.rule=Host(\`\${DOMAIN}\`)"
       - "traefik.http.routers.vps-http.entrypoints=web"
-      - "traefik.http.routers.vps-http.middlewares=redirect-to-https"
+      - "traefik.http.routers.vps-http.service=vps"
     networks:
       - web
     restart: always
@@ -155,6 +152,19 @@ start_services() {
     docker compose -f "${install_dir}/docker-compose.yml" ps
 }
 
+# 清理函数
+cleanup() {
+    info "清理旧的配置..."
+    if [ -f acme.json ]; then
+        rm -f acme.json
+    fi
+    if [ -d letsencrypt ]; then
+        rm -rf letsencrypt
+    fi
+    docker compose down 2>/dev/null || true
+    success "清理完成"
+}
+
 # 主函数
 main() {
     echo "=== VPS Value Tracker 安装脚本 ==="
@@ -169,6 +179,9 @@ main() {
     install_dir=$(realpath "$install_dir")
     mkdir -p "$install_dir"
     cd "$install_dir"
+    
+    # 清理旧的配置
+    cleanup
     
     # 执行安装步骤
     create_directories
