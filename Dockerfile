@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 安装前端依赖并构建
 WORKDIR /app/frontend
-RUN npm install
+RUN npm install --force
 RUN npm run build
 
 WORKDIR /app
