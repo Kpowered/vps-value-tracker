@@ -40,6 +40,11 @@ HTML_TEMPLATE = '''
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -122,13 +127,55 @@ HTML_TEMPLATE = '''
             </div>
         </div>
 
+        <!-- 登录模态框 -->
+        <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="loginModalLabel">登录</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="loginForm" onsubmit="return handleLogin(event)">
+                            <div class="mb-3">
+                                <label class="form-label">用户名</label>
+                                <input type="text" class="form-control" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">密码</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">登录</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加VPS模态框 -->
+        <div class="modal fade" id="addVpsModal" tabindex="-1" aria-labelledby="addVpsModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addVpsModalLabel">添加 VPS</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addVpsForm" onsubmit="return handleAddVps(event)">
+                            <!-- ... 表单字段保持不变 ... -->
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 图片预览模态框 -->
-        <div class="modal fade" id="imagePreviewModal" tabindex="-1">
+        <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">图片预览</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title" id="imagePreviewModalLabel">图片预览</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body text-center">
                         <img id="previewImage" class="img-fluid" src="" alt="Preview">
@@ -148,6 +195,14 @@ HTML_TEMPLATE = '''
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
+        // 初始化所有模态框
+        document.addEventListener('DOMContentLoaded', function() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modalEl => {
+                new bootstrap.Modal(modalEl);
+            });
+        });
+
         // 登出功能
         async function logout() {
             const response = await fetch('/api/logout', {
@@ -225,7 +280,10 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-# 数据库初始化
+# 配置部分
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
+# 修改数据库初始化函数
 async def init_db():
     try:
         async with aiosqlite.connect(DB_PATH) as db:
@@ -252,7 +310,20 @@ async def init_db():
                     user_id INTEGER
                 )
             ''')
-            await db.commit()
+            # 创建默认管理员账号
+            hashed_password = pwd_context.hash(ADMIN_PASSWORD)
+            try:
+                await db.execute('INSERT INTO users (username, password) VALUES (?, ?)',
+                               ['admin', hashed_password])
+                await db.commit()
+                logger.info("Created default admin user")
+            except:
+                # 更新已存在的管理员密码
+                await db.execute('UPDATE users SET password = ? WHERE username = ?',
+                               [hashed_password, 'admin'])
+                await db.commit()
+                logger.info("Updated admin password")
+                
             logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Database initialization error: {e}", exc_info=True)

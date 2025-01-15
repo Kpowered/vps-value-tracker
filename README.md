@@ -76,6 +76,7 @@
 |--------|------|--------|------|
 | FIXER_API_KEY | 是 | - | fixer.io的API密钥 |
 | PORT | 否 | 8000 | 应用程序端口 |
+| ADMIN_PASSWORD | 否 | admin123 | 管理员密码 |
 
 ## 数据持久化
 
@@ -144,3 +145,19 @@
 - FastAPI (Python Web框架)
 - SQLite (数据库)
 - Bootstrap (前端框架)
+
+使用自定义密码启动：
+
+```bash
+docker run -d \
+  --name vps-value-tracker \
+  -p 80:8000 \
+  -e FIXER_API_KEY=your_api_key \
+  -e ADMIN_PASSWORD=your_password \
+  -v /path/to/data:/app/data \
+  kpowered/vps-value-tracker
+```
+
+登录时使用：
+- 用户名：admin
+- 密码：你设置的 ADMIN_PASSWORD（默认为 admin123）
