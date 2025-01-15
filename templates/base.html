@@ -429,8 +429,11 @@
             try {
                 const table = document.querySelector('.card');
                 const canvas = await html2canvas(table);
+                
+                // 转换为图片
                 const imageData = canvas.toDataURL('image/png');
                 
+                // 上传到服务器
                 const response = await fetch('/api/upload-image', {
                     method: 'POST',
                     headers: {
@@ -441,56 +444,25 @@
                 
                 if (response.ok) {
                     const { url } = await response.json();
+                    
+                    // 获取完整URL
                     const fullUrl = window.location.origin + url;
                     
-                    // 生成完整的 Markdown 文档
-                    const now = new Date().toLocaleString('zh-CN');
-                    const markdownContent = `# VPS 价值统计 (${now})
-
-## 统计表格
-${await generateTableMarkdown()}
-
-## 图表预览
-![VPS Table](${fullUrl})
-
-> 注：图片可能需要 VPN 访问`;
+                    // 生成Markdown格式的图片链接
+                    const markdownLink = `![VPS Table](${fullUrl})`;
                     
                     // 显示预览
                     document.getElementById('previewImage').src = url;
                     document.getElementById('imageDownloadLink').href = url;
-                    document.getElementById('markdownLink').value = markdownContent;
+                    document.getElementById('markdownLink').value = markdownLink;
                     
+                    // 显示模态框
                     new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('生成图片失败: ' + error.message);
             }
-        }
-
-        // 生成表格 Markdown
-        async function generateTableMarkdown() {
-            const table = document.querySelector('table');
-            let md = '';
-            
-            // 表头
-            const headers = Array.from(table.querySelectorAll('thead th'))
-                .filter(th => !th.textContent.includes('操作'))
-                .map(th => th.textContent.trim());
-            
-            md += '| ' + headers.join(' | ') + ' |\n';
-            md += '|' + headers.map(() => ' --- ').join('|') + '|\n';
-            
-            // 数据行
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const cells = Array.from(row.querySelectorAll('td'))
-                    .filter(td => !td.querySelector('button'))
-                    .map(td => td.textContent.trim());
-                md += '| ' + cells.join(' | ') + ' |\n';
-            });
-            
-            return md;
         }
 
         // 添加复制Markdown链接功能
