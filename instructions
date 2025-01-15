@@ -1,13 +1,14 @@
-帮我写一个vps的剩余价值展示器,用最简洁的语言写:
+ 写一个vps的剩余价值展示器:
  要有简单的登录功能：
  登录后可以添加vps信息,包括商家名称,CPU,内存,硬盘,流量,价格,到期时间。
     添加价格的时候要有货币种类的选项，包括人民币，美元，欧元，英镑，加元，日元。
-    添加vps信息的时候,开始时间要自动转换为当前时间。
-    添加vps信息的时候,到期时间要自动转换为开始时间的一年后。
-    添加vps信息的时候,CPU要可以选择核心数量并能够填写型号
-    添加vps信息的时候,内存要可以选择内存大小(GB)
-    添加vps信息的时候,硬盘要可以选择硬盘大小(GB)
-    添加vps信息的时候,流量要可以选择流量大小(GB)
+    添加vps信息的时候,开始时间要自动转换为当前时间，并且可以手动选择。
+    添加vps信息的时候,到期时间要自动转换为开始时间的一年后，并且可以手动选择。
+    添加vps信息的时候,CPU要可以选择核心数量并能够填写型号。
+    添加vps信息的时候,内存要可以选择内存大小(GB)。
+    添加vps信息的时候,硬盘要可以选择硬盘大小(GB)。
+    添加vps信息的时候,流量要可以选择流量大小(GB)。
+ 展示页面:
  展示页面不需要登录。
  展示页面要展示所有vps信息,包括商家名称,CPU,内存,硬盘,流量,价格,到期时间。
  展示页面要展示VPS的剩余价值,剩余价值要自动计算,计算公式为: 价格 * 剩余时间 / 365,
@@ -22,5 +23,5 @@
  项目部署后要可以方便的删除。
  我的git地址是 https://github.com/Kpowered/vps-value-tracker.git
  我的github账号是Kpowered
-我希望的部署方式为 docker pull创建好的镜像,然后docker-compose up -d 直接可以运行，用户只需要修改.env就可以直接部署项目
-我希望在运行快速部署脚本后，用户只需要填入需要设置的域名和 fixer.io的api,就可以完成.env文件的创建,并且可以运行。如果没有fixer.io的api,则退出
+ 我希望的部署方式为 docker run -d --name vps-value-tracker -p 80:80 -p 443:443 -v /etc/letsencrypt:/etc/letsencrypt -v /var/log/letsencrypt:/var/log/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt -e DOMAIN=vps.example.com -e FIXER_API_KEY=9fc7824eeb86c023e2ba423a80f17f9b kpowered/vps-value-tracker.
+ 用户只需要修改域名和fixer.io的api就可以直接部署项目
