@@ -14,6 +14,7 @@ import os
 import base64
 from pathlib import Path
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +34,18 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 设置模板目录
 templates = Jinja2Templates(directory="templates")
+
+# 在创建 app 后添加 CORS 中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 在生产环境中应该设置具体的域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 修改静态文件配置
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 # HTML模板直接嵌入到代码中
 HTML_TEMPLATE = '''
@@ -599,9 +612,6 @@ async def convert_currency(amount: float, currency: str):
 # 创建图片保存目录
 IMAGES_DIR = Path('static/images')
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-
-# 添加静态文件服务
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.post("/api/logout")
 async def logout():
