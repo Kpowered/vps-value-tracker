@@ -138,10 +138,6 @@ HTML_TEMPLATE = '''
                     <div class="modal-body">
                         <form id="loginForm" onsubmit="return handleLogin(event)">
                             <div class="mb-3">
-                                <label class="form-label">用户名</label>
-                                <input type="text" class="form-control" name="username" required>
-                            </div>
-                            <div class="mb-3">
                                 <label class="form-label">密码</label>
                                 <input type="password" class="form-control" name="password" required>
                             </div>
@@ -370,28 +366,15 @@ async def calculate_remaining_value(price: float, currency: str, end_date: str) 
 @app.post("/api/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            async with db.execute('SELECT * FROM users WHERE username = ?', [username]) as cursor:
-                user = await cursor.fetchone()
-                
-            if not user:
-                # 创建第一个用户
-                hashed_password = pwd_context.hash(password)
-                await db.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
-                               [username, hashed_password])
-                await db.commit()
-                token = jwt.encode({"sub": username}, SECRET_KEY)
-                response = JSONResponse(content={"success": True})
-                response.set_cookie(key="session", value=token, httponly=True)
-                return response
-                
-            if not pwd_context.verify(password, user[2]):
-                raise HTTPException(status_code=401, detail="Invalid credentials")
-                
-            token = jwt.encode({"sub": username}, SECRET_KEY)
+        # 忽略用户名，只验证密码
+        if password == ADMIN_PASSWORD:
+            token = jwt.encode({"sub": "admin"}, SECRET_KEY)
             response = JSONResponse(content={"success": True})
             response.set_cookie(key="session", value=token, httponly=True)
             return response
+        else:
+            raise HTTPException(status_code=401, detail="Invalid password")
+            
     except Exception as e:
         logger.error(f"Login error: {e}", exc_info=True)
         raise
