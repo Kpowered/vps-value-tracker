@@ -30,18 +30,42 @@ fi
 # 创建数据目录
 mkdir -p data
 
-# 如果.env文件不存在，从示例文件创建
-if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        print_message "已创建.env文件，请编辑配置..."
-        print_message "JWT_SECRET已自动生成"
-        # 生成随机JWT密钥
-        sed -i "s/your-secret-key/$(openssl rand -base64 32)/" .env
-    else
-        print_error ".env.example文件不存在"
-        exit 1
-    fi
+# 获取必要的配置信息
+print_message "请输入Fixer.io的API密钥 (必填)："
+read -r FIXER_API_KEY
+
+if [ -z "$FIXER_API_KEY" ]; then
+    print_error "未提供Fixer.io API密钥，退出安装"
+    exit 1
+fi
+
+print_message "请输入域名 (可选，直接回车跳过)："
+read -r DOMAIN
+
+# 生成随机JWT密钥
+JWT_SECRET=$(openssl rand -base64 32)
+
+# 创建.env文件
+cat > .env << EOL
+# 应用配置
+PORT=3000
+DATABASE_URL=file:./data/dev.db
+JWT_SECRET=${JWT_SECRET}
+
+# 域名配置
+DOMAIN=${DOMAIN}
+
+# 汇率API配置
+FIXER_API_KEY=${FIXER_API_KEY}
+EOL
+
+# 验证API密钥
+print_message "正在验证Fixer.io API密钥..."
+FIXER_TEST=$(curl -s "http://data.fixer.io/api/latest?access_key=${FIXER_API_KEY}&symbols=CNY")
+if ! echo "$FIXER_TEST" | grep -q "success\":true"; then
+    print_error "Fixer.io API密钥验证失败，请检查密钥是否正确"
+    rm .env
+    exit 1
 fi
 
 # 拉取最新镜像
@@ -52,12 +76,47 @@ docker pull kpowered/vps-value-tracker:latest
 print_message "正在启动服务..."
 docker-compose up -d
 
+# 等待服务启动
+print_message "等待服务启动..."
+sleep 5
+
 # 创建初始用户
 print_message "是否创建管理员用户？(y/n)"
 read -r create_user
 if [ "$create_user" = "y" ]; then
-    docker-compose exec app npm run create-user
+    docker-compose exec -T app npm run create-user
 fi
 
 print_message "部署完成！"
-echo "请访问 http://localhost:${PORT:-3000} 查看网站" 
+if [ -n "$DOMAIN" ]; then
+    echo "请将域名 ${DOMAIN} 解析到服务器IP"
+    echo "然后访问 https://${DOMAIN} 查看网站"
+else
+    echo "请访问 http://localhost:3000 查看网站"
+fi
+
+# 如果配置了域名，提示配置SSL
+if [ -n "$DOMAIN" ]; then
+    print_message "是否要配置SSL证书？(y/n)"
+    read -r setup_ssl
+    if [ "$setup_ssl" = "y" ]; then
+        # 安装certbot
+        apt-get update
+        apt-get install -y certbot python3-certbot-nginx
+        
+        # 配置SSL
+        certbot --nginx \
+            --domains "$DOMAIN" \
+            --non-interactive \
+            --agree-tos \
+            --email "admin@${DOMAIN}" \
+            --redirect
+            
+        print_message "SSL证书配置完成"
+    fi
+fi
+
+print_message "提示："
+echo "1. 请确保防火墙已开放3000端口（如果使用域名，则需要开放80和443端口）"
+echo "2. 定期备份 ./data 目录以保护数据安全"
+echo "3. 使用 docker-compose logs -f 查看运行日志" 
