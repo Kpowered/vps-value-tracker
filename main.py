@@ -1,20 +1,32 @@
-from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form, HTTPException, Cookie
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 import aiosqlite
 import aiohttp
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, Cookie
 import secrets
 from typing import Optional
 from jinja2 import Template
+import logging
+import os
 
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 应用配置
 app = FastAPI()
+SECRET_KEY = secrets.token_urlsafe(32)
+FIXER_API_KEY = os.getenv("FIXER_API_KEY")
+DB_PATH = os.path.join('data', 'vps.db')
+
+# 确保数据目录存在
+os.makedirs('data', exist_ok=True)
+
+# 密码处理
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # HTML模板直接嵌入到代码中
 HTML_TEMPLATE = '''
@@ -245,40 +257,40 @@ HTML_TEMPLATE = '''
 
 # 数据库初始化
 async def init_db():
-    async with aiosqlite.connect('vps.db') as db:
-        await db.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE,
-                password TEXT
-            )
-        ''')
-        await db.execute('''
-            CREATE TABLE IF NOT EXISTS vps (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vendor_name TEXT,
-                cpu_cores INTEGER,
-                cpu_model TEXT,
-                memory INTEGER,
-                storage INTEGER,
-                bandwidth INTEGER,
-                price REAL,
-                currency TEXT,
-                start_date TEXT,
-                end_date TEXT,
-                user_id INTEGER
-            )
-        ''')
-        await db.commit()
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE,
+                    password TEXT
+                )
+            ''')
+            await db.execute('''
+                CREATE TABLE IF NOT EXISTS vps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    vendor_name TEXT,
+                    cpu_cores INTEGER,
+                    cpu_model TEXT,
+                    memory INTEGER,
+                    storage INTEGER,
+                    bandwidth INTEGER,
+                    price REAL,
+                    currency TEXT,
+                    start_date TEXT,
+                    end_date TEXT,
+                    user_id INTEGER
+                )
+            ''')
+            await db.commit()
+            logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}", exc_info=True)
+        raise
 
 @app.on_event("startup")
 async def startup_event():
     await init_db()
-
-# 配置
-SECRET_KEY = secrets.token_urlsafe(32)
-FIXER_API_KEY = "9fc7824eeb86c023e2ba423a80f17f9b"
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 汇率缓存
 exchange_rates_cache = {"timestamp": 0, "rates": {}}
@@ -316,25 +328,32 @@ async def calculate_remaining_value(price: float, currency: str, end_date: str) 
 # API路由实现
 @app.post("/api/login")
 async def login(username: str = Form(...), password: str = Form(...)):
-    async with aiosqlite.connect('vps.db') as db:
-        async with db.execute('SELECT * FROM users WHERE username = ?', [username]) as cursor:
-            user = await cursor.fetchone()
-            
-        if not user:
-            # 创建第一个用户
-            hashed_password = pwd_context.hash(password)
-            await db.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
-                           [username, hashed_password])
-            await db.commit()
-            return {"success": True}
-            
-        if not pwd_context.verify(password, user[2]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-            
-        token = jwt.encode({"sub": username}, SECRET_KEY)
-        response = {"success": True}
-        response.headers["Set-Cookie"] = f"session={token}; Path=/; HttpOnly"
-        return response
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute('SELECT * FROM users WHERE username = ?', [username]) as cursor:
+                user = await cursor.fetchone()
+                
+            if not user:
+                # 创建第一个用户
+                hashed_password = pwd_context.hash(password)
+                await db.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
+                               [username, hashed_password])
+                await db.commit()
+                token = jwt.encode({"sub": username}, SECRET_KEY)
+                response = JSONResponse(content={"success": True})
+                response.set_cookie(key="session", value=token, httponly=True)
+                return response
+                
+            if not pwd_context.verify(password, user[2]):
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+                
+            token = jwt.encode({"sub": username}, SECRET_KEY)
+            response = JSONResponse(content={"success": True})
+            response.set_cookie(key="session", value=token, httponly=True)
+            return response
+    except Exception as e:
+        logger.error(f"Login error: {e}", exc_info=True)
+        raise
 
 @app.post("/api/vps")
 async def add_vps(vps_data: dict, session: str = Cookie(None)):
@@ -391,22 +410,42 @@ async def get_vps():
 # 修改首页路由，添加用户信息
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, session: Optional[str] = Cookie(None)):
-    user = None
-    if session:
-        try:
-            payload = jwt.decode(session, SECRET_KEY)
-            user = {"username": payload["sub"]}
-        except JWTError:
-            pass
-            
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute('SELECT * FROM vps ORDER BY end_date DESC') as cursor:
-            vps_list = [dict(row) for row in await cursor.fetchall()]
-            
-    # 使用 Jinja2 渲染模板
-    template = Template(HTML_TEMPLATE)
-    return HTMLResponse(content=template.render(
-        user=user,
-        vps_list=vps_list
-    )) 
+    try:
+        user = None
+        if session:
+            try:
+                payload = jwt.decode(session, SECRET_KEY)
+                user = {"username": payload["sub"]}
+            except JWTError as e:
+                logger.warning(f"Invalid session token: {e}")
+                
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute('SELECT * FROM vps ORDER BY end_date DESC') as cursor:
+                vps_list = [dict(row) for row in await cursor.fetchall()]
+                
+        template = Template(HTML_TEMPLATE)
+        return HTMLResponse(content=template.render(
+            user=user,
+            vps_list=vps_list
+        ))
+    except Exception as e:
+        logger.error(f"Home page error: {e}", exc_info=True)
+        raise
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    ) 
+
+@app.get("/api/convert")
+async def convert_currency(amount: float, currency: str):
+    try:
+        value = await convert_to_cny(amount, currency)
+        return {"value": value}
+    except Exception as e:
+        logger.error(f"Currency conversion error: {e}", exc_info=True)
+        raise 
