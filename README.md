@@ -25,7 +25,8 @@
 使用一键安装脚本，自动完成所有配置：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/kpowered/vps-value-tracker/main/install.sh | bash
+curl -O https://raw.githubusercontent.com/kpowered/vps-value-tracker/main/install.sh && chmod +x install.sh && ./install.sh
+
 ```
 
 按照提示输入：
