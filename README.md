@@ -10,61 +10,61 @@
 - 简单的用户认证系统
 - 响应式设计，支持移动端
 
-## 快速开始
+## 快速部署
 
-### 方法1：使用 Docker（推荐）
+### 使用域名和HTTPS（推荐）：
 
-1. 拉取镜像
+```bash
+docker run -d \
+  --name vps-tracker \
+  -p 80:80 \
+  -p 443:443 \
+  -e ADMIN_PASSWORD=your_secure_password \
+  -e FIXER_API_KEY=your_api_key \
+  -e DOMAIN=your-domain.com \
+  -e EMAIL=your-email@example.com \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/static:/app/static \
+  -v caddy_data:/data \
+  -v caddy_config:/config \
+  kpowered/vps-value-tracker
+```
 
-    ```bash
-    docker pull kpowered/vps-value-tracker
-    ```
+### 本地测试（不使用HTTPS）：
 
-2. 运行容器
+```bash
+docker run -d \
+  --name vps-tracker \
+  -p 80:80 \
+  -e ADMIN_PASSWORD=your_secure_password \
+  -e FIXER_API_KEY=your_api_key \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/static:/app/static \
+  kpowered/vps-value-tracker
+```
 
-    ```bash
-    docker run -d \
-      --name vps-value-tracker \
-      -p 80:8000 \
-      -e FIXER_API_KEY=your_api_key \
-      -e ADMIN_PASSWORD=your_secure_password \
-      -v /path/to/data:/app/data \
-      kpowered/vps-value-tracker
-    ```
+### 环境变量说明：
 
-注意：
-- 将 `your_api_key` 替换为你的 fixer.io API key
-- 如果不想使用80端口，可以修改 `-p 80:8000` 中的80为其他端口
-- 必须设置 ADMIN_PASSWORD 环境变量
-- 请使用安全的密码
-- 密码将用于登录系统
+| 变量名 | 必填 | 默认值 | 说明 |
+|--------|------|--------|------|
+| ADMIN_PASSWORD | 是 | - | 管理员密码 |
+| FIXER_API_KEY | 是 | - | fixer.io的API密钥 |
+| DOMAIN | 否 | localhost | 网站域名 |
+| EMAIL | 否* | - | 用于SSL证书的邮箱（使用域名时必填）|
 
-### 方法2：从源码构建
+### 数据持久化：
 
-1. 克隆仓库
+- `/app/data`: 数据库文件
+- `/app/static`: 静态文件（包括生成的图片）
+- `/data`: Caddy SSL证书数据
+- `/config`: Caddy配置数据
 
-    ```bash
-    git clone https://github.com/Kpowered/vps-value-tracker.git
-    cd vps-value-tracker
-    ```
+### 注意事项：
 
-2. 构建Docker镜像
-
-    ```bash
-    docker build -t vps-value-tracker .
-    ```
-
-3. 运行容器
-
-    ```bash
-    docker run -d \
-      --name vps-value-tracker \
-      -p 80:8000 \
-      -e FIXER_API_KEY=your_api_key \
-      -e ADMIN_PASSWORD=your_secure_password \
-      -v /path/to/data:/app/data \
-      vps-value-tracker
-    ```
+1. 使用域名时，确保域名已经指向服务器IP
+2. 需要开放80和443端口
+3. 首次启动可能需要几分钟来获取SSL证书
+4. 本地测试时不需要设置DOMAIN和EMAIL
 
 ## 首次使用
 

@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - web
+
+  vps-tracker:
+    build: .
+    container_name: vps-tracker
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - FIXER_API_KEY=${FIXER_API_KEY}
+      - DOMAIN=${DOMAIN}
+      - BASE_URL=https://${DOMAIN}
+    volumes:
+      - ./data:/app/data
+      - ./static:/app/static
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vps.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.vps.entrypoints=websecure"
+      - "traefik.http.routers.vps.tls.certresolver=myresolver"
+      - "traefik.http.services.vps.loadbalancer.server.port=8000"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true 

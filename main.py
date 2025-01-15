@@ -624,10 +624,14 @@ async def upload_image(data: dict):
         with open(file_path, 'wb') as f:
             f.write(image_bytes)
             
-        # 返回图片URL
+        # 返回图片URL（使用完整域名）
+        image_url = f"/static/images/{filename}"
+        full_url = f"{BASE_URL}{image_url}"
+            
         return {
             "success": True,
-            "url": f"/static/images/{filename}"
+            "url": image_url,
+            "full_url": full_url
         }
     except Exception as e:
         logger.error(f"Error saving image: {e}")
@@ -706,3 +710,7 @@ async def delete_vps(vps_id: int, session: str = Cookie(None)):
         except Exception as e:
             logger.error(f"Database error while deleting VPS: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete VPS") 
+
+# 添加环境变量
+DOMAIN = os.getenv("DOMAIN", "localhost")
+BASE_URL = os.getenv("BASE_URL", f"http://{DOMAIN}") 
