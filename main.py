@@ -54,9 +54,13 @@ HTML_TEMPLATE = '''
                 <thead>
                     <tr>
                         <th>商家</th>
-                        <th>配置</th>
+                        <th>CPU</th>
+                        <th>内存</th>
+                        <th>硬盘</th>
+                        <th>流量</th>
                         <th>价格</th>
                         <th>剩余价值(CNY)</th>
+                        <th>开始时间</th>
                         <th>到期时间</th>
                     </tr>
                 </thead>
@@ -64,12 +68,10 @@ HTML_TEMPLATE = '''
                     {% for vps in vps_list %}
                     <tr>
                         <td>{{ vps['vendor_name'] }}</td>
-                        <td>
-                            {{ vps['cpu_cores'] }}核 {{ vps['cpu_model'] }}<br>
-                            {{ vps['memory'] }}GB 内存<br>
-                            {{ vps['storage'] }}GB 硬盘<br>
-                            {{ vps['bandwidth'] }}GB 流量
-                        </td>
+                        <td>{{ vps['cpu_cores'] }}核 {{ vps['cpu_model'] }}</td>
+                        <td>{{ vps['memory'] }}GB</td>
+                        <td>{{ vps['storage'] }}GB</td>
+                        <td>{{ vps['bandwidth'] }}GB</td>
                         <td>{{ vps['price'] }} {{ vps['currency'] }}</td>
                         <td class="remaining-value" 
                             data-price="{{ vps['price'] }}"
@@ -77,6 +79,7 @@ HTML_TEMPLATE = '''
                             data-end-date="{{ vps['end_date'] }}">
                             计算中...
                         </td>
+                        <td>{{ vps['start_date'] }}</td>
                         <td>{{ vps['end_date'] }}</td>
                     </tr>
                     {% endfor %}
@@ -165,9 +168,15 @@ HTML_TEMPLATE = '''
                                 <option value="JPY">日元</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">到期时间</label>
-                            <input type="date" class="form-control" name="end_date" required>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">开始时间</label>
+                                <input type="date" class="form-control" name="start_date" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">到期时间</label>
+                                <input type="date" class="form-control" name="end_date" required>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">添加</button>
                     </form>
@@ -250,6 +259,25 @@ HTML_TEMPLATE = '''
 
         // 页面加载完成后更新剩余价值
         document.addEventListener('DOMContentLoaded', updateRemainingValues);
+
+        // 在表单加载时设置默认日期
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const nextYear = new Date();
+            nextYear.setFullYear(today.getFullYear() + 1);
+            
+            // 格式化日期为 YYYY-MM-DD
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            // 设置默认日期
+            document.querySelector('input[name="start_date"]').value = formatDate(today);
+            document.querySelector('input[name="end_date"]').value = formatDate(nextYear);
+        });
     </script>
 </body>
 </html>
@@ -390,7 +418,7 @@ async def add_vps(vps_data: dict, session: str = Cookie(None)):
                     int(vps_data.get("bandwidth", 0)),
                     float(vps_data.get("price", 0)),
                     vps_data.get("currency", "CNY"),
-                    datetime.now().strftime("%Y-%m-%d"),
+                    vps_data.get("start_date", datetime.now().strftime("%Y-%m-%d")),  # 使用提交的开始日期
                     vps_data.get("end_date"),
                     user[0]
                 ])
