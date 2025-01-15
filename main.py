@@ -687,3 +687,22 @@ async def update_vps(vps_id: int, vps_data: dict, session: str = Cookie(None)):
         except Exception as e:
             logger.error(f"Database error while updating VPS: {e}")
             raise HTTPException(status_code=500, detail="Failed to update VPS") 
+
+@app.delete("/api/vps/{vps_id}")
+async def delete_vps(vps_id: int, session: str = Cookie(None)):
+    if not session:
+        raise HTTPException(status_code=401)
+    
+    try:
+        payload = jwt.decode(session, SECRET_KEY)
+    except JWTError:
+        raise HTTPException(status_code=401)
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        try:
+            await db.execute('DELETE FROM vps WHERE id = ?', [vps_id])
+            await db.commit()
+            return {"success": True}
+        except Exception as e:
+            logger.error(f"Database error while deleting VPS: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete VPS") 
