@@ -52,6 +52,9 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=\${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
@@ -65,7 +68,7 @@ services:
       - web
 
   vps-tracker:
-    image: kpowered/vps-value-tracker:latest
+    image: docker.io/kpowered/vps-value-tracker:latest
     container_name: vps-tracker
     environment:
       - ADMIN_PASSWORD=\${ADMIN_PASSWORD}
