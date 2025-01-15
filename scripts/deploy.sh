@@ -31,6 +31,15 @@ PORT=${PORT:-3000}
 # 安装基本依赖
 print_message "正在安装基本依赖..."
 apt-get update
+
+# 添加Nginx仓库密钥
+curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
+
+# 更新包列表
+apt-get update
+
+# 安装依赖
 apt-get install -y curl git nginx
 
 # 安装 Node.js
