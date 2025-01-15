@@ -12,6 +12,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, Cookie
 import secrets
 from typing import Optional
+from jinja2 import Template
 
 app = FastAPI()
 
@@ -30,9 +31,9 @@ HTML_TEMPLATE = '''
         <div class="d-flex justify-content-between mb-4">
             <h1>VPS Value Tracker</h1>
             {% if user %}
-                <button class="btn btn-primary" onclick="showAddVpsModal()">添加 VPS</button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addVpsModal">添加 VPS</button>
             {% else %}
-                <button class="btn btn-outline-primary" onclick="showLoginModal()">登录</button>
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">登录</button>
             {% endif %}
         </div>
 
@@ -47,24 +48,24 @@ HTML_TEMPLATE = '''
                         <th>到期时间</th>
                     </tr>
                 </thead>
-                <tbody id="vpsTable">
+                <tbody>
                     {% for vps in vps_list %}
                     <tr>
-                        <td>{{ vps.vendor_name }}</td>
+                        <td>{{ vps['vendor_name'] }}</td>
                         <td>
-                            {{ vps.cpu_cores }}核 {{ vps.cpu_model }}<br>
-                            {{ vps.memory }}GB 内存<br>
-                            {{ vps.storage }}GB 硬盘<br>
-                            {{ vps.bandwidth }}GB 流量
+                            {{ vps['cpu_cores'] }}核 {{ vps['cpu_model'] }}<br>
+                            {{ vps['memory'] }}GB 内存<br>
+                            {{ vps['storage'] }}GB 硬盘<br>
+                            {{ vps['bandwidth'] }}GB 流量
                         </td>
-                        <td>{{ vps.price }} {{ vps.currency }}</td>
+                        <td>{{ vps['price'] }} {{ vps['currency'] }}</td>
                         <td class="remaining-value" 
-                            data-price="{{ vps.price }}"
-                            data-currency="{{ vps.currency }}"
-                            data-end-date="{{ vps.end_date }}">
+                            data-price="{{ vps['price'] }}"
+                            data-currency="{{ vps['currency'] }}"
+                            data-end-date="{{ vps['end_date'] }}">
                             计算中...
                         </td>
-                        <td>{{ vps.end_date }}</td>
+                        <td>{{ vps['end_date'] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -81,7 +82,7 @@ HTML_TEMPLATE = '''
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="loginForm">
+                    <form id="loginForm" onsubmit="return handleLogin(event)">
                         <div class="mb-3">
                             <label class="form-label">用户名</label>
                             <input type="text" class="form-control" name="username" required>
@@ -106,7 +107,7 @@ HTML_TEMPLATE = '''
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="addVpsForm">
+                    <form id="addVpsForm" onsubmit="return handleAddVps(event)">
                         <div class="mb-3">
                             <label class="form-label">商家名称</label>
                             <input type="text" class="form-control" name="vendor_name" required>
@@ -165,41 +166,78 @@ HTML_TEMPLATE = '''
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // JavaScript代码
-        async function loadVpsList() {
-            const response = await fetch('/api/vps');
-            const data = await response.json();
-            // 更新表格...
-        }
-
-        async function login(event) {
+        // 处理登录
+        async function handleLogin(event) {
             event.preventDefault();
             const form = event.target;
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(Object.fromEntries(new FormData(form)))
-            });
-            if (response.ok) {
-                location.reload();
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('登录失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('登录失败');
+            }
+            return false;
+        }
+
+        // 处理添加VPS
+        async function handleAddVps(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/vps', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('添加失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('添加失败');
+            }
+            return false;
+        }
+
+        // 计算剩余价值
+        async function updateRemainingValues() {
+            const cells = document.querySelectorAll('.remaining-value');
+            for (const cell of cells) {
+                const price = parseFloat(cell.dataset.price);
+                const currency = cell.dataset.currency;
+                const endDate = new Date(cell.dataset.endDate);
+                const now = new Date();
+                
+                const daysRemaining = Math.max(0, (endDate - now) / (1000 * 60 * 60 * 24));
+                const response = await fetch(`/api/convert?amount=${price}&currency=${currency}`);
+                const { value } = await response.json();
+                
+                const remainingValue = (value * daysRemaining / 365).toFixed(2);
+                cell.textContent = `¥${remainingValue}`;
             }
         }
 
-        async function addVps(event) {
-            event.preventDefault();
-            const form = event.target;
-            const response = await fetch('/api/vps', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(Object.fromEntries(new FormData(form)))
-            });
-            if (response.ok) {
-                location.reload();
-            }
-        }
-
-        document.getElementById('loginForm').addEventListener('submit', login);
-        document.getElementById('addVpsForm').addEventListener('submit', addVps);
+        // 页面加载完成后更新剩余价值
+        document.addEventListener('DOMContentLoaded', updateRemainingValues);
     </script>
 </body>
 </html>
@@ -352,7 +390,7 @@ async def get_vps():
 
 # 修改首页路由，添加用户信息
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request, session: str = Cookie(None)):
+async def home(request: Request, session: Optional[str] = Cookie(None)):
     user = None
     if session:
         try:
@@ -361,13 +399,14 @@ async def home(request: Request, session: str = Cookie(None)):
         except JWTError:
             pass
             
-    async with aiosqlite.connect('vps.db') as db:
+    async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute('SELECT * FROM vps ORDER BY end_date DESC') as cursor:
-            vps_list = await cursor.fetchall()
+            vps_list = [dict(row) for row in await cursor.fetchall()]
             
-    return HTMLResponse(content=HTML_TEMPLATE.replace(
-        "{% if user %}", "{% if " + str(bool(user)) + " %}"
-    ).replace(
-        "{{ vps_list }}", str([dict(vps) for vps in vps_list])
+    # 使用 Jinja2 渲染模板
+    template = Template(HTML_TEMPLATE)
+    return HTMLResponse(content=template.render(
+        user=user,
+        vps_list=vps_list
     )) 
