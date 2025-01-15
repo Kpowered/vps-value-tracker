@@ -23,7 +23,7 @@ services:
       - web
 
   vps-tracker:
-    build: .
+    image: kpowered/vps-value-tracker:latest
     container_name: vps-tracker
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
