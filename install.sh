@@ -33,12 +33,16 @@ check_requirements() {
 create_directories() {
     info "创建必要的目录..."
     mkdir -p data static letsencrypt
-    # 创建并设置 acme.json 权限
-    if [ ! -f letsencrypt/acme.json ]; then
+    # 如果有备份的证书，恢复它
+    if [ -f letsencrypt.backup/acme.json ]; then
+        info "使用备份的证书..."
+        cp letsencrypt.backup/acme.json letsencrypt/
+    elif [ ! -f letsencrypt/acme.json ]; then
+        info "创建新的证书文件..."
         mkdir -p letsencrypt
         touch letsencrypt/acme.json
-        chmod 600 letsencrypt/acme.json
     fi
+    chmod 600 letsencrypt/acme.json
     success "目录创建完成"
 }
 
@@ -156,10 +160,20 @@ start_services() {
 # 清理函数
 cleanup() {
     info "清理旧的配置..."
-    if [ -d letsencrypt ]; then
-        rm -rf letsencrypt
+    # 保留现有证书
+    if [ -f letsencrypt/acme.json ]; then
+        info "保留现有证书..."
+        mkdir -p letsencrypt.backup
+        cp letsencrypt/acme.json letsencrypt.backup/
     fi
     docker compose down 2>/dev/null || true
+    # 恢复证书
+    if [ -f letsencrypt.backup/acme.json ]; then
+        info "恢复证书..."
+        mkdir -p letsencrypt
+        cp letsencrypt.backup/acme.json letsencrypt/
+        chmod 600 letsencrypt/acme.json
+    fi
     success "清理完成"
 }
 
