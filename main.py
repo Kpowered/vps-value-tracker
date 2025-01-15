@@ -150,7 +150,7 @@ HTML_TEMPLATE = '''
 
         <!-- 添加VPS模态框 -->
         <div class="modal fade" id="addVpsModal" tabindex="-1" aria-labelledby="addVpsModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="addVpsModalLabel">添加 VPS</h5>
@@ -158,7 +158,72 @@ HTML_TEMPLATE = '''
                     </div>
                     <div class="modal-body">
                         <form id="addVpsForm" onsubmit="return handleAddVps(event)">
-                            <!-- ... 表单字段保持不变 ... -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">商家名称</label>
+                                    <input type="text" class="form-control" name="vendor_name" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">CPU核心数</label>
+                                    <input type="number" class="form-control" name="cpu_cores" min="1" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">CPU型号</label>
+                                    <input type="text" class="form-control" name="cpu_model" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">内存(GB)</label>
+                                    <input type="number" class="form-control" name="memory" min="0.5" step="0.5" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">硬盘(GB)</label>
+                                    <input type="number" class="form-control" name="storage" min="1" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">流量(GB)</label>
+                                    <input type="number" class="form-control" name="bandwidth" min="1" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">价格</label>
+                                    <input type="number" class="form-control" name="price" min="0.01" step="0.01" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">货币</label>
+                                    <select class="form-select" name="currency" required>
+                                        <option value="CNY">人民币 (CNY)</option>
+                                        <option value="USD">美元 (USD)</option>
+                                        <option value="EUR">欧元 (EUR)</option>
+                                        <option value="GBP">英镑 (GBP)</option>
+                                        <option value="JPY">日元 (JPY)</option>
+                                        <option value="CAD">加元 (CAD)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">开始时间</label>
+                                    <input type="date" class="form-control" name="start_date" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">到期时间</label>
+                                    <input type="date" class="form-control" name="end_date" required>
+                                </div>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <button type="submit" class="btn btn-primary">添加</button>
+                            </div>
                         </form>
                     </div>
                 </div>
