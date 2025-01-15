@@ -9,162 +9,169 @@
 - 每日自动更新汇率
 - 简单的用户认证系统
 - 响应式设计，支持移动端
+- 自动HTTPS支持
+- 支持导出Markdown和图片
 
 ## 快速部署
 
-### 使用域名和HTTPS（推荐）：
+### 准备工作
 
+1. 确保已安装 Docker 和 Docker Compose
+2. 准备一个域名并解析到服务器IP
+3. 获取 fixer.io 的 API Key
+
+### 部署步骤
+
+1. 创建部署目录：
 ```bash
-docker run -d \
-  --name vps-tracker \
-  -p 80:80 \
-  -p 443:443 \
-  -e ADMIN_PASSWORD=your_secure_password \
-  -e FIXER_API_KEY=your_api_key \
-  -e DOMAIN=your-domain.com \
-  -e EMAIL=your-email@example.com \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/static:/app/static \
-  -v caddy_data:/data \
-  -v caddy_config:/config \
-  kpowered/vps-value-tracker
+mkdir vps-tracker && cd vps-tracker
 ```
 
-### 本地测试（不使用HTTPS）：
+2. 创建 docker-compose.yml：
+```yaml
+version: '3'
 
-```bash
-docker run -d \
-  --name vps-tracker \
-  -p 80:80 \
-  -e ADMIN_PASSWORD=your_secure_password \
-  -e FIXER_API_KEY=your_api_key \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/static:/app/static \
-  kpowered/vps-value-tracker
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+    networks:
+      - web
+
+  vps-tracker:
+    image: kpowered/vps-value-tracker:latest
+    container_name: vps-tracker
+    environment:
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - FIXER_API_KEY=${FIXER_API_KEY}
+      - DOMAIN=${DOMAIN}
+      - BASE_URL=https://${DOMAIN}
+    volumes:
+      - ./data:/app/data
+      - ./static:/app/static
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vps.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.vps.entrypoints=websecure"
+      - "traefik.http.routers.vps.tls.certresolver=myresolver"
+      - "traefik.http.services.vps.loadbalancer.server.port=8000"
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
 ```
 
-### 环境变量说明：
+3. 创建 .env 文件：
+```env
+ADMIN_PASSWORD=your_secure_password
+FIXER_API_KEY=your_fixer_api_key
+DOMAIN=your-domain.com
+EMAIL=your-email@example.com
+```
 
-| 变量名 | 必填 | 默认值 | 说明 |
-|--------|------|--------|------|
-| ADMIN_PASSWORD | 是 | - | 管理员密码 |
-| FIXER_API_KEY | 是 | - | fixer.io的API密钥 |
-| DOMAIN | 否 | localhost | 网站域名 |
-| EMAIL | 否* | - | 用于SSL证书的邮箱（使用域名时必填）|
+4. 创建必要的目录：
+```bash
+mkdir -p data static letsencrypt
+```
 
-### 数据持久化：
+5. 创建 Docker 网络：
+```bash
+docker network create web
+```
 
-- `/app/data`: 数据库文件
-- `/app/static`: 静态文件（包括生成的图片）
-- `/data`: Caddy SSL证书数据
-- `/config`: Caddy配置数据
+6. 拉取镜像并启动服务：
+```bash
+docker pull kpowered/vps-value-tracker:latest
+docker compose up -d
+```
 
-### 注意事项：
+### 环境变量说明
 
-1. 使用域名时，确保域名已经指向服务器IP
-2. 需要开放80和443端口
-3. 首次启动可能需要几分钟来获取SSL证书
-4. 本地测试时不需要设置DOMAIN和EMAIL
+| 变量名 | 必填 | 说明 |
+|--------|------|------|
+| ADMIN_PASSWORD | 是 | 管理员密码 |
+| FIXER_API_KEY | 是 | fixer.io的API密钥 |
+| DOMAIN | 是 | 网站域名 |
+| EMAIL | 是 | 用于SSL证书的邮箱 |
 
-## 首次使用
+### 数据持久化
 
-1. 访问 `http://your-server-ip`（或者你设置的域名）
+- `./data`: 数据库文件
+- `./static`: 静态文件（包括生成的图片）
+- `./letsencrypt`: SSL证书文件
 
-2. 第一次点击"登录"按钮时，输入的用户名和密码将自动注册为管理员账号
+## 使用说明
 
-3. 登录后可以：
-   - 添加新的VPS信息
-   - 查看所有VPS的剩余价值
-   - 自动转换不同货币到人民币
-
-## 环境变量
-
-| 变量名 | 必填 | 默认值 | 说明 |
-|--------|------|--------|------|
-| FIXER_API_KEY | 是 | - | fixer.io的API密钥 |
-| PORT | 否 | 8000 | 应用程序端口 |
-| ADMIN_PASSWORD | 是 | - | 管理员密码 |
-
-## 数据持久化
-
-如果需要保存数据，可以挂载数据目录：
-
-    ```bash
-    docker run -d \
-      --name vps-value-tracker \
-      -p 80:8000 \
-      -v /path/to/data:/app/data \
-      -e FIXER_API_KEY=your_api_key \
-      kpowered/vps-value-tracker
-    ```
+1. 访问 `https://your-domain.com`
+2. 使用设置的管理员密码登录
+3. 添加、编辑或删除VPS信息
+4. 查看剩余价值计算
+5. 导出Markdown表格或生成图片分享
 
 ## 更新应用
 
-1. 拉取最新镜像
+```bash
+# 拉取最新镜像
+docker pull kpowered/vps-value-tracker:latest
 
-    ```bash
-    docker pull kpowered/vps-value-tracker
-    ```
-
-2. 停止并删除旧容器
-
-    ```bash
-    docker stop vps-value-tracker
-    docker rm vps-value-tracker
-    ```
-
-3. 使用新镜像启动容器
-
-    ```bash
-    docker run -d \
-      --name vps-value-tracker \
-      -p 80:8000 \
-      -v /path/to/data:/app/data \
-      -e FIXER_API_KEY=your_api_key \
-      kpowered/vps-value-tracker
-    ```
+# 重启服务
+docker compose down
+docker compose up -d
+```
 
 ## 卸载应用
 
-    ```bash
-    docker stop vps-value-tracker
-    docker rm vps-value-tracker
-    # 如果不再需要镜像
-    docker rmi kpowered/vps-value-tracker
-    ```
+```bash
+# 停止并删除容器
+docker compose down
+
+# 删除数据（可选）
+rm -rf data static letsencrypt
+
+# 删除网络（可选）
+docker network rm web
+```
 
 ## 常见问题
 
-1. 数据库在哪里？
-   - 数据存储在容器的 `/app/data/vps.db` 文件中
-   - 如果需要备份，请挂载数据目录
+1. 无法访问HTTPS？
+   - 确保域名已正确解析到服务器IP
+   - 确保80和443端口已开放
+   - 查看日志：`docker compose logs -f`
 
-2. 如何修改端口？
-   - 修改 docker run 命令中的 `-p 80:8000` 参数
-   - 例如：`-p 8080:8000` 将使用8080端口
+2. 图片无法保存？
+   - 检查 static 目录权限
+   - 确保目录可写
 
-3. 汇率更新频率？
-   - 每24小时自动更新一次
-   - 使用 fixer.io 的免费API
+3. 汇率更新失败？
+   - 验证 FIXER_API_KEY 是否正确
+   - 检查API调用限额
 
 ## 技术栈
 
 - FastAPI (Python Web框架)
 - SQLite (数据库)
 - Bootstrap (前端框架)
+- Traefik (反向代理)
+- Docker (容器化)
 
-使用自定义密码启动：
+## 开源协议
 
-```bash
-docker run -d \
-  --name vps-value-tracker \
-  -p 80:8000 \
-  -e FIXER_API_KEY=your_api_key \
-  -e ADMIN_PASSWORD=your_password \
-  -v /path/to/data:/app/data \
-  kpowered/vps-value-tracker
-```
-
-登录时使用：
-- 用户名：admin
-- 密码：你设置的 ADMIN_PASSWORD（默认为 admin123）
+MIT License
