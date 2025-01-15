@@ -1,19 +1,14 @@
-version: '3.8'
-
+version: '3'
 services:
   app:
     image: kpowered/vps-value-tracker:latest
-    restart: always
     ports:
-      - "${PORT:-3000}:3000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./data:/app/prisma/data
-    networks:
-      - app_network
-
-networks:
-  app_network:
-    driver: bridge 
+      - ./data:/app/data
+      - ./certs:/app/certs
+    environment:
+      - DOMAIN=${DOMAIN}
+      - FIXER_API_KEY=${FIXER_API_KEY}
+    restart: unless-stopped 
