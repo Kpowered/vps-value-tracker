@@ -33,6 +33,8 @@ check_requirements() {
 create_directories() {
     info "创建必要的目录..."
     mkdir -p data static letsencrypt
+    touch acme.json
+    chmod 600 acme.json
     success "目录创建完成"
 }
 
@@ -55,17 +57,23 @@ services:
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--log.level=DEBUG"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=\${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
+      - "./acme.json:/acme.json"
     networks:
       - web
+      restart: always
 
   vps-tracker:
     image: docker.io/kpowered/vps-value-tracker:latest
@@ -84,8 +92,14 @@ services:
       - "traefik.http.routers.vps.entrypoints=websecure"
       - "traefik.http.routers.vps.tls.certresolver=myresolver"
       - "traefik.http.services.vps.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.routers.vps-http.rule=Host(\`\${DOMAIN}\`)"
+      - "traefik.http.routers.vps-http.entrypoints=web"
+      - "traefik.http.routers.vps-http.middlewares=redirect-to-https"
     networks:
       - web
+      restart: always
 
 networks:
   web:
