@@ -49,7 +49,47 @@ cd /opt/vps-value-tracker
 
 # 创建必要的配置文件
 print_message "正在创建配置文件..."
-mkdir -p app components
+mkdir -p app components prisma
+cat > prisma/schema.prisma << 'EOL'
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  password String
+  vps      Vps[]
+}
+
+model Vps {
+  id          Int      @id @default(autoincrement())
+  name        String
+  cpuCores    Int
+  cpuModel    String
+  memory      Int
+  disk        Int
+  bandwidth   Int
+  price       Float
+  currency    String
+  startTime   DateTime @default(now())
+  endTime     DateTime
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model ExchangeRate {
+  id        Int      @id @default(autoincrement())
+  currency  String   @unique
+  rate      Float
+  updatedAt DateTime @default(now())
+}
+EOL
 
 # 创建 VPS 列表组件
 cat > components/vps-list.tsx << 'EOL'
@@ -278,7 +318,12 @@ EOL
     # 配置 SSL
     print_message "正在配置 SSL..."
     apt-get install -y certbot python3-certbot-nginx
-    certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos --email admin@${DOMAIN}
+    certbot --nginx \
+        -d "${DOMAIN}" \
+        --non-interactive \
+        --agree-tos \
+        --email "admin@${DOMAIN}" \
+        --redirect
 fi
 
 # 创建系统服务
