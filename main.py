@@ -673,11 +673,11 @@ async def update_vps(vps_id: int, vps_data: dict, session: str = Cookie(None)):
                 WHERE id = ?
             ''', [
                 vps_data.get("vendor_name"),
-                int(vps_data.get("cpu_cores", 0)),
+                float(vps_data.get("cpu_cores", 0)),  # 改为 float
                 vps_data.get("cpu_model", ""),
-                int(vps_data.get("memory", 0)),
-                int(vps_data.get("storage", 0)),
-                int(vps_data.get("bandwidth", 0)),
+                float(vps_data.get("memory", 0)),     # 改为 float
+                float(vps_data.get("storage", 0)),    # 改为 float
+                float(vps_data.get("bandwidth", 0)),  # 改为 float
                 float(vps_data.get("price", 0)),
                 vps_data.get("currency", "CNY"),
                 vps_data.get("start_date"),
@@ -688,7 +688,7 @@ async def update_vps(vps_id: int, vps_data: dict, session: str = Cookie(None)):
             return {"success": True}
         except Exception as e:
             logger.error(f"Database error while updating VPS: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update VPS") 
+            raise HTTPException(status_code=500, detail=str(e))  # 返回具体错误信息
 
 @app.delete("/api/vps/{vps_id}")
 async def delete_vps(vps_id: int, session: str = Cookie(None)):
