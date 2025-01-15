@@ -86,10 +86,10 @@
                             <td>{{ vps.end_date }}</td>
                             {% if user %}
                             <td>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editVPS('{{ vps.id }}')">
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editVPS({{ vps.id }})">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVPS('{{ vps.id }}')">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteVPS({{ vps.id }})">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
@@ -269,16 +269,63 @@
             }
         }
 
-        // 添加VPS处理
+        // 编辑 VPS
+        async function editVPS(id) {
+            console.log('Editing VPS:', id); // 调试日志
+            try {
+                const response = await fetch(`/api/vps/${id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch VPS data');
+                }
+                
+                const vps = await response.json();
+                console.log('VPS data:', vps); // 调试日志
+                
+                const form = document.getElementById('addVpsForm');
+                
+                // 填充表单
+                form.vendor_name.value = vps.vendor_name;
+                form.cpu_cores.value = vps.cpu_cores;
+                form.cpu_model.value = vps.cpu_model;
+                form.memory.value = vps.memory;
+                form.storage.value = vps.storage;
+                form.bandwidth.value = vps.bandwidth;
+                form.price.value = vps.price;
+                form.currency.value = vps.currency;
+                form.start_date.value = vps.start_date;
+                form.end_date.value = vps.end_date;
+                
+                // 存储编辑状态
+                form.dataset.editId = id;
+                
+                // 修改按钮文本
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.textContent = '更新';
+                
+                // 显示模态框
+                const modal = new bootstrap.Modal(document.getElementById('addVpsModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('加载VPS数据失败');
+            }
+        }
+
+        // 处理表单提交
         async function handleAddVps(event) {
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+            const editId = form.dataset.editId;
             
             try {
-                const response = await fetch('/api/vps', {
-                    method: 'POST',
+                const url = editId ? `/api/vps/${editId}` : '/api/vps';
+                const method = editId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -289,12 +336,17 @@
                     window.location.reload();
                 } else {
                     const error = await response.json();
-                    alert(error.detail || '添加失败');
+                    alert(error.detail || (editId ? '更新失败' : '添加失败'));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('添加失败: 网络错误');
+                alert(editId ? '更新失败: 网络错误' : '添加失败: 网络错误');
             }
+            
+            // 重置表单状态
+            delete form.dataset.editId;
+            form.querySelector('button[type="submit"]').textContent = '添加';
+            
             return false;
         }
 
@@ -321,44 +373,49 @@
             }
         }
 
-        // 导出Markdown
+        // 导出 Markdown
         function exportMarkdown() {
-            const table = document.querySelector('table');
-            let md = '| ';
-            
-            // 表头
-            const headers = table.querySelectorAll('thead th');
-            headers.forEach(header => {
-                if (!header.textContent.includes('操作')) {
-                    md += header.textContent + ' | ';
-                }
-            });
-            md += '\n|';
-            
-            // 分隔线
-            headers.forEach(header => {
-                if (!header.textContent.includes('操作')) {
-                    md += ' --- |';
-                }
-            });
-            md += '\n';
-            
-            // 数据行
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                md += '| ';
-                row.querySelectorAll('td').forEach((cell, index) => {
-                    if (!cell.querySelector('button')) {  // 跳过操作列
-                        md += cell.textContent.trim() + ' | ';
-                    }
+            try {
+                const table = document.querySelector('table');
+                let md = '';
+                
+                // 表头
+                const headers = Array.from(table.querySelectorAll('thead th'))
+                    .filter(th => !th.textContent.includes('操作'))
+                    .map(th => th.textContent.trim());
+                
+                md += '| ' + headers.join(' | ') + ' |\n';
+                md += '|' + headers.map(() => ' --- ').join('|') + '|\n';
+                
+                // 数据行
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const cells = Array.from(row.querySelectorAll('td'))
+                        .filter(td => !td.querySelector('button'))
+                        .map(td => td.textContent.trim());
+                    md += '| ' + cells.join(' | ') + ' |\n';
                 });
-                md += '\n';
-            });
-            
-            // 复制到剪贴板
-            navigator.clipboard.writeText(md).then(() => {
-                alert('Markdown 表格已复制到剪贴板');
-            });
+                
+                // 使用 textarea 进行复制
+                const textarea = document.createElement('textarea');
+                textarea.value = md;
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    alert('Markdown 表格已复制到剪贴板');
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动复制以下内容：\n\n' + md);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('导出失败: ' + error.message);
+            }
         }
 
         // 生成图片
@@ -425,10 +482,19 @@
             document.querySelector('input[name="end_date"]').value = formatDate(nextYear);
         }
 
-        // 页面加载完成后执行
+        // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
-            updateRemainingValues();
+            // 初始化所有模态框
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modalEl => {
+                new bootstrap.Modal(modalEl);
+            });
+            
+            // 设置默认日期
             setDefaultDates();
+            
+            // 更新剩余价值
+            updateRemainingValues();
         });
     </script>
 </body>
