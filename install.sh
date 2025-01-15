@@ -32,12 +32,13 @@ check_requirements() {
 # 创建目录结构
 create_directories() {
     info "创建必要的目录..."
-    mkdir -p data static
+    mkdir -p data static letsencrypt
     # 创建并设置 acme.json 权限
-    if [ ! -f acme.json ]; then
-        touch acme.json
+    if [ ! -f letsencrypt/acme.json ]; then
+        mkdir -p letsencrypt
+        touch letsencrypt/acme.json
+        chmod 600 letsencrypt/acme.json
     fi
-    chmod 600 acme.json
     success "目录创建完成"
 }
 
@@ -62,14 +63,14 @@ services:
       - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=\${EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.myresolver.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./acme.json:/acme.json"
+      - "./letsencrypt:/letsencrypt"
     networks:
       - web
     restart: always
@@ -155,9 +156,6 @@ start_services() {
 # 清理函数
 cleanup() {
     info "清理旧的配置..."
-    if [ -f acme.json ]; then
-        rm -f acme.json
-    fi
     if [ -d letsencrypt ]; then
         rm -rf letsencrypt
     fi
