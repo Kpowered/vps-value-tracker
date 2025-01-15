@@ -287,6 +287,7 @@ EOL
 # 初始化数据库
 print_message "正在初始化数据库..."
 npx prisma generate
+npx prisma migrate dev --name init
 npx prisma migrate deploy
 
 # 构建项目
@@ -318,12 +319,18 @@ EOL
     # 配置 SSL
     print_message "正在配置 SSL..."
     apt-get install -y certbot python3-certbot-nginx
-    certbot --nginx \
-        -d "${DOMAIN}" \
+    # 确保域名存在且有效
+    if [ -n "${DOMAIN}" ]; then
+      certbot --nginx \
+        --domains "${DOMAIN}" \
         --non-interactive \
         --agree-tos \
         --email "admin@${DOMAIN}" \
-        --redirect
+        --redirect \
+        --keep-until-expiring
+    else
+      print_error "未提供域名，跳过SSL配置"
+    fi
 fi
 
 # 创建系统服务
