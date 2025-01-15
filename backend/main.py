@@ -26,6 +26,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 添加健康检查端点
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 FIXER_API_KEY = os.getenv('FIXER_API_KEY')
 rates_cache = {}
 last_rates_update = None
