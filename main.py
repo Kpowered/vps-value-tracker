@@ -270,6 +270,33 @@ HTML_TEMPLATE = '''
             }
         }
 
+        // 修改登录处理函数
+        async function handleLogin(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData();
+            formData.append('username', 'admin');  // 固定用户名
+            formData.append('password', form.password.value);  // 获取密码
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || '登录失败');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('登录失败: 网络错误');
+            }
+            return false;
+        }
+
         // 其他 JavaScript 代码保持不变
     </script>
 </body>
@@ -329,6 +356,9 @@ async def init_db():
 
 @app.on_event("startup")
 async def startup_event():
+    logger.info(f"ADMIN_PASSWORD is set to: {ADMIN_PASSWORD}")
+    if not ADMIN_PASSWORD:
+        raise ValueError("ADMIN_PASSWORD environment variable must be set")
     await init_db()
 
 # 汇率缓存
@@ -368,18 +398,23 @@ async def calculate_remaining_value(price: float, currency: str, end_date: str) 
 @app.post("/api/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     try:
-        # 忽略用户名，只验证密码
+        logger.info(f"Login attempt with password: {password}")
+        logger.info(f"Expected password: {ADMIN_PASSWORD}")
+        
+        # 直接比较密码
         if password == ADMIN_PASSWORD:
             token = jwt.encode({"sub": "admin"}, SECRET_KEY)
             response = JSONResponse(content={"success": True})
             response.set_cookie(key="session", value=token, httponly=True)
+            logger.info("Login successful")
             return response
         else:
-            raise HTTPException(status_code=401, detail="Invalid password")
+            logger.warning("Invalid password")
+            raise HTTPException(status_code=401, detail="密码错误")
             
     except Exception as e:
         logger.error(f"Login error: {e}", exc_info=True)
-        raise
+        raise HTTPException(status_code=500, detail="登录失败")
 
 @app.post("/api/vps")
 async def add_vps(vps_data: dict, session: str = Cookie(None)):
