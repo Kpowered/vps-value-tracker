@@ -13,6 +13,7 @@ import logging
 import os
 import base64
 from pathlib import Path
+from fastapi.templating import Jinja2Templates
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +30,9 @@ os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 # 密码处理
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# 设置模板目录
+templates = Jinja2Templates(directory="templates")
 
 # HTML模板直接嵌入到代码中
 HTML_TEMPLATE = '''
@@ -566,11 +570,11 @@ async def home(request: Request, session: Optional[str] = Cookie(None)):
             async with db.execute('SELECT * FROM vps ORDER BY end_date DESC') as cursor:
                 vps_list = [dict(row) for row in await cursor.fetchall()]
                 
-        template = Template(HTML_TEMPLATE)
-        return HTMLResponse(content=template.render(
-            user=user,
-            vps_list=vps_list
-        ))
+        return templates.TemplateResponse("base.html", {
+            "request": request,
+            "user": user,
+            "vps_list": vps_list
+        })
     except Exception as e:
         logger.error(f"Home page error: {e}", exc_info=True)
         raise
