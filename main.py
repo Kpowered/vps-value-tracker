@@ -277,7 +277,9 @@ HTML_TEMPLATE = '''
 '''
 
 # 配置部分
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    raise ValueError("ADMIN_PASSWORD environment variable must be set")
 
 # 修改数据库初始化函数
 async def init_db():

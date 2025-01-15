@@ -27,12 +27,17 @@
       --name vps-value-tracker \
       -p 80:8000 \
       -e FIXER_API_KEY=your_api_key \
+      -e ADMIN_PASSWORD=your_secure_password \
+      -v /path/to/data:/app/data \
       kpowered/vps-value-tracker
     ```
 
 注意：
 - 将 `your_api_key` 替换为你的 fixer.io API key
 - 如果不想使用80端口，可以修改 `-p 80:8000` 中的80为其他端口
+- 必须设置 ADMIN_PASSWORD 环境变量
+- 请使用安全的密码
+- 密码将用于登录系统
 
 ### 方法2：从源码构建
 
@@ -56,6 +61,8 @@
       --name vps-value-tracker \
       -p 80:8000 \
       -e FIXER_API_KEY=your_api_key \
+      -e ADMIN_PASSWORD=your_secure_password \
+      -v /path/to/data:/app/data \
       vps-value-tracker
     ```
 
@@ -76,7 +83,7 @@
 |--------|------|--------|------|
 | FIXER_API_KEY | 是 | - | fixer.io的API密钥 |
 | PORT | 否 | 8000 | 应用程序端口 |
-| ADMIN_PASSWORD | 否 | admin123 | 管理员密码 |
+| ADMIN_PASSWORD | 是 | - | 管理员密码 |
 
 ## 数据持久化
 
