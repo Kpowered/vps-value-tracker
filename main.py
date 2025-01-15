@@ -23,7 +23,7 @@ FIXER_API_KEY = os.getenv("FIXER_API_KEY")
 DB_PATH = os.path.join('data', 'vps.db')
 
 # 确保数据目录存在
-os.makedirs('data', exist_ok=True)
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 # 密码处理
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -111,12 +111,12 @@ HTML_TEMPLATE = '''
     </div>
 
     <!-- 添加VPS模态框 -->
-    <div class="modal fade" id="addVpsModal" tabindex="-1">
+    <div class="modal fade" id="addVpsModal" tabindex="-1" aria-labelledby="addVpsModalLabel">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">添加 VPS</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="addVpsModalLabel">添加 VPS</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addVpsForm" onsubmit="return handleAddVps(event)">
@@ -357,37 +357,53 @@ async def login(username: str = Form(...), password: str = Form(...)):
 
 @app.post("/api/vps")
 async def add_vps(vps_data: dict, session: str = Cookie(None)):
-    if not session:
-        raise HTTPException(status_code=401)
-    
     try:
-        payload = jwt.decode(session, SECRET_KEY)
-        username = payload["sub"]
-    except JWTError:
-        raise HTTPException(status_code=401)
+        if not session:
+            raise HTTPException(status_code=401)
+        
+        try:
+            payload = jwt.decode(session, SECRET_KEY)
+            username = payload["sub"]
+        except JWTError:
+            raise HTTPException(status_code=401)
 
-    async with aiosqlite.connect('vps.db') as db:
-        # 获取用户ID
-        async with db.execute('SELECT id FROM users WHERE username = ?', [username]) as cursor:
-            user = await cursor.fetchone()
-            if not user:
-                raise HTTPException(status_code=401)
-                
-        # 添加VPS信息
-        await db.execute('''
-            INSERT INTO vps (
-                vendor_name, cpu_cores, cpu_model, memory, storage, bandwidth,
-                price, currency, start_date, end_date, user_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', [
-            vps_data["vendor_name"], vps_data["cpu_cores"], vps_data["cpu_model"],
-            vps_data["memory"], vps_data["storage"], vps_data["bandwidth"],
-            vps_data["price"], vps_data["currency"],
-            datetime.now().strftime("%Y-%m-%d"), vps_data["end_date"],
-            user[0]
-        ])
-        await db.commit()
-    return {"success": True}
+        async with aiosqlite.connect(DB_PATH) as db:  # 使用正确的数据库路径
+            # 获取用户ID
+            async with db.execute('SELECT id FROM users WHERE username = ?', [username]) as cursor:
+                user = await cursor.fetchone()
+                if not user:
+                    raise HTTPException(status_code=401)
+                    
+            # 添加VPS信息
+            try:
+                await db.execute('''
+                    INSERT INTO vps (
+                        vendor_name, cpu_cores, cpu_model, memory, storage, bandwidth,
+                        price, currency, start_date, end_date, user_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [
+                    vps_data.get("vendor_name"),
+                    int(vps_data.get("cpu_cores", 0)),
+                    vps_data.get("cpu_model", ""),
+                    int(vps_data.get("memory", 0)),
+                    int(vps_data.get("storage", 0)),
+                    int(vps_data.get("bandwidth", 0)),
+                    float(vps_data.get("price", 0)),
+                    vps_data.get("currency", "CNY"),
+                    datetime.now().strftime("%Y-%m-%d"),
+                    vps_data.get("end_date"),
+                    user[0]
+                ])
+                await db.commit()
+                return {"success": True}
+            except Exception as e:
+                logger.error(f"Database error while adding VPS: {e}")
+                raise HTTPException(status_code=500, detail="Failed to add VPS")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding VPS: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/vps")
 async def get_vps():
