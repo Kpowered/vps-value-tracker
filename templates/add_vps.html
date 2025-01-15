@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>添加 VPS</h2>
+    <form method="post" action="/vps">
+        <div class="mb-3">
+            <label for="name" class="form-label">名称</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+        <div class="mb-3">
+            <label for="provider" class="form-label">服务商</label>
+            <input type="text" class="form-control" id="provider" name="provider" required>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">价格</label>
+            <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+        </div>
+        <div class="mb-3">
+            <label for="currency" class="form-label">货币</label>
+            <select class="form-control" id="currency" name="currency" required>
+                <option value="CNY">CNY - 人民币</option>
+                <option value="USD">USD - 美元</option>
+                <option value="EUR">EUR - 欧元</option>
+                <option value="GBP">GBP - 英镑</option>
+                <option value="JPY">JPY - 日元</option>
+                <option value="CAD">CAD - 加元</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="purchase_date" class="form-label">购买日期</label>
+            <input type="date" class="form-control" id="purchase_date" name="purchase_date" required>
+        </div>
+        <div class="mb-3">
+            <label for="duration_months" class="form-label">时长（月）</label>
+            <input type="number" class="form-control" id="duration_months" name="duration_months" required>
+        </div>
+        <div class="mb-3">
+            <label for="notes" class="form-label">备注</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">添加</button>
+        <a href="/" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %} 

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>编辑 VPS</h2>
+    <form method="post" action="/vps/{{ vps.id }}">
+        <div class="mb-3">
+            <label for="name" class="form-label">名称</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ vps.name }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="provider" class="form-label">服务商</label>
+            <input type="text" class="form-control" id="provider" name="provider" value="{{ vps.provider }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">价格</label>
+            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ vps.price }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="currency" class="form-label">货币</label>
+            <select class="form-control" id="currency" name="currency" required>
+                <option value="CNY" {% if vps.currency == 'CNY' %}selected{% endif %}>CNY - 人民币</option>
+                <option value="USD" {% if vps.currency == 'USD' %}selected{% endif %}>USD - 美元</option>
+                <option value="EUR" {% if vps.currency == 'EUR' %}selected{% endif %}>EUR - 欧元</option>
+                <option value="GBP" {% if vps.currency == 'GBP' %}selected{% endif %}>GBP - 英镑</option>
+                <option value="JPY" {% if vps.currency == 'JPY' %}selected{% endif %}>JPY - 日元</option>
+                <option value="CAD" {% if vps.currency == 'CAD' %}selected{% endif %}>CAD - 加元</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="purchase_date" class="form-label">购买日期</label>
+            <input type="date" class="form-control" id="purchase_date" name="purchase_date" value="{{ vps.purchase_date }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="duration_months" class="form-label">时长（月）</label>
+            <input type="number" class="form-control" id="duration_months" name="duration_months" value="{{ vps.duration_months }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="notes" class="form-label">备注</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3">{{ vps.notes }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="/" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %} 
