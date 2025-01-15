@@ -20,75 +20,51 @@
 2. 准备一个域名并解析到服务器IP
 3. 获取 fixer.io 的 API Key
 
-### 部署步骤
+### 方式一：一键安装（推荐）
+
+使用一键安装脚本，自动完成所有配置：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kpowered/vps-value-tracker/main/install.sh | bash
+```
+
+按照提示输入：
+- 安装目录（可选）
+- 管理员密码
+- Fixer.io API Key
+- 域名
+- 邮箱地址
+
+脚本会自动完成：
+- 创建必要的目录
+- 配置 docker-compose.yml
+- 设置环境变量
+- 创建 Docker 网络
+- 拉取镜像并启动服务
+
+### 方式二：手动安装
 
 1. 创建部署目录：
 ```bash
 mkdir vps-tracker && cd vps-tracker
 ```
 
-2. 创建 docker-compose.yml：
-```yaml
-version: '3'
-
-services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.insecure=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
-    networks:
-      - web
-
-  vps-tracker:
-    image: kpowered/vps-value-tracker:latest
-    container_name: vps-tracker
-    environment:
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - FIXER_API_KEY=${FIXER_API_KEY}
-      - DOMAIN=${DOMAIN}
-      - BASE_URL=https://${DOMAIN}
-    volumes:
-      - ./data:/app/data
-      - ./static:/app/static
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.vps.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.vps.entrypoints=websecure"
-      - "traefik.http.routers.vps.tls.certresolver=myresolver"
-      - "traefik.http.services.vps.loadbalancer.server.port=8000"
-    networks:
-      - web
-
-networks:
-  web:
-    external: true
+2. 创建必要的目录：
+```bash
+mkdir -p data static letsencrypt
 ```
 
-3. 创建 .env 文件：
+3. 下载配置文件：
+```bash
+curl -O https://raw.githubusercontent.com/kpowered/vps-value-tracker/main/docker-compose.yml
+```
+
+4. 创建 .env 文件：
 ```env
 ADMIN_PASSWORD=your_secure_password
 FIXER_API_KEY=your_fixer_api_key
 DOMAIN=your-domain.com
 EMAIL=your-email@example.com
-```
-
-4. 创建必要的目录：
-```bash
-mkdir -p data static letsencrypt
 ```
 
 5. 创建 Docker 网络：
@@ -163,6 +139,11 @@ docker network rm web
 3. 汇率更新失败？
    - 验证 FIXER_API_KEY 是否正确
    - 检查API调用限额
+
+4. 一键安装脚本失败？
+   - 确保有执行权限
+   - 检查 Docker 和 Docker Compose 是否正确安装
+   - 查看详细错误信息：`bash -x install.sh`
 
 ## 技术栈
 
