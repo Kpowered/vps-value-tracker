@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { formatDistance } from 'date-fns'
-import { zh } from 'date-fns/locale'
+import zhCN from 'date-fns/locale/zh-CN'
 
 interface Vps {
   id: number
@@ -40,7 +40,7 @@ export function VpsList() {
             <p>硬盘: {vps.disk}GB</p>
             <p>流量: {vps.bandwidth}GB</p>
             <p>价格: {vps.price} {vps.currency}</p>
-            <p>到期时间: {formatDistance(new Date(vps.endTime), new Date(), { locale: zh })}</p>
+            <p>到期时间: {formatDistance(new Date(vps.endTime), new Date(), { locale: zhCN })}</p>
             <p className="font-semibold">
               剩余价值: {vps.remainingValue.toFixed(2)} {vps.currency}
               <span className="text-gray-500 ml-2">
