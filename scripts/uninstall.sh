@@ -1,38 +1,47 @@
 #!/bin/bash
 
-# 颜色定义
+# 设置错误时退出
+set -e
+
+# 定义颜色
+GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${RED}开始卸载 VPS Value Tracker...${NC}"
+# 打印带颜色的消息
+print_message() {
+    echo -e "${GREEN}$1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}$1${NC}"
+}
 
 # 检查是否为root用户
 if [ "$EUID" -ne 0 ]; then 
-    echo "请使用root权限运行此脚本"
+    print_error "请使用root用户运行此脚本"
     exit 1
 fi
 
-# 删除Nginx配置
-rm -f /etc/nginx/sites-enabled/vps-tracker
-rm -f /etc/nginx/sites-available/vps-tracker
+# 停止并删除服务
+print_message "正在停止服务..."
+systemctl stop vps-value-tracker
+systemctl disable vps-value-tracker
+rm -f /etc/systemd/system/vps-value-tracker.service
+systemctl daemon-reload
 
-# 删除项目文件
-rm -rf /var/www/vps-value-tracker
-
-# 删除数据库
-read -p "是否删除数据库？(y/n): " delete_db
-if [ "$delete_db" = "y" ]; then
-    read -p "请输入数据库名称 (默认: vps_tracker): " dbname
-    dbname=${dbname:-vps_tracker}
-    read -p "请输入数据库用户名 (默认: vps_user): " dbuser
-    dbuser=${dbuser:-vps_user}
-    
-    mysql -e "DROP DATABASE IF EXISTS ${dbname};"
-    mysql -e "DROP USER IF EXISTS '${dbuser}'@'localhost';"
-    mysql -e "FLUSH PRIVILEGES;"
-fi
-
-# 重启Nginx
+# 删除 Nginx 配置
+print_message "正在删除 Nginx 配置..."
+rm -f /etc/nginx/sites-enabled/vps-value-tracker
+rm -f /etc/nginx/sites-available/vps-value-tracker
 systemctl restart nginx
 
-echo -e "${RED}卸载完成！${NC}" 
+# 删除项目文件
+print_message "正在删除项目文件..."
+rm -rf /opt/vps-value-tracker
+
+# 删除定时任务
+print_message "正在删除定时任务..."
+crontab -l | grep -v "vps-value-tracker" | crontab -
+
+print_message "卸载完成！" 

@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "next start",
+    "build": "next build",
+    "dev": "next dev",
+    "update-rates": "ts-node scripts/update-exchange-rates.ts"
+  }
+} 
