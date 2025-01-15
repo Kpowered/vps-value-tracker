@@ -73,7 +73,7 @@ services:
       - "./acme.json:/acme.json"
     networks:
       - web
-      restart: always
+    restart: always
 
   vps-tracker:
     image: docker.io/kpowered/vps-value-tracker:latest
@@ -99,7 +99,7 @@ services:
       - "traefik.http.routers.vps-http.middlewares=redirect-to-https"
     networks:
       - web
-      restart: always
+    restart: always
 
 networks:
   web:
@@ -146,9 +146,13 @@ start_services() {
     docker pull kpowered/vps-value-tracker:latest
     
     info "启动服务..."
-    docker compose up -d
+    docker compose -f "${install_dir}/docker-compose.yml" up -d
     
     success "服务启动完成"
+    
+    # 显示服务状态
+    info "服务状态："
+    docker compose -f "${install_dir}/docker-compose.yml" ps
 }
 
 # 主函数
@@ -162,6 +166,7 @@ main() {
     # 创建工作目录
     read -p "请输入安装目录 (默认: ./vps-tracker): " install_dir
     install_dir=${install_dir:-"./vps-tracker"}
+    install_dir=$(realpath "$install_dir")
     mkdir -p "$install_dir"
     cd "$install_dir"
     
@@ -182,7 +187,11 @@ main() {
     echo "访问地址: https://$(grep DOMAIN .env | cut -d= -f2)"
     echo "使用设置的管理员密码登录即可开始使用"
     echo
-    echo "查看日志: docker compose logs -f"
+    echo "查看日志: docker compose -f ${install_dir}/docker-compose.yml logs -f"
+    echo "重启服务: docker compose -f ${install_dir}/docker-compose.yml restart"
+    echo "停止服务: docker compose -f ${install_dir}/docker-compose.yml down"
+    echo
+    echo "安装目录: ${install_dir}"
 }
 
 # 运行主函数
