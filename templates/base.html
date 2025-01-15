@@ -216,8 +216,14 @@
                 <div class="modal-body text-center">
                     <img id="previewImage" class="img-fluid" src="" alt="Preview">
                     <div class="mt-3">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="markdownLink" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyMarkdownLink()">
+                                <i class="bi bi-clipboard"></i> 复制
+                            </button>
+                        </div>
                         <a id="imageDownloadLink" class="btn btn-primary" download="vps-table.png">
-                            下载图片
+                            <i class="bi bi-download"></i> 下载图片
                         </a>
                     </div>
                 </div>
@@ -420,28 +426,66 @@
 
         // 生成图片
         async function generateImage() {
-            const table = document.querySelector('.card');
-            const canvas = await html2canvas(table);
-            
-            // 转换为图片
-            const imageData = canvas.toDataURL('image/png');
-            
-            // 上传到服务器
-            const response = await fetch('/api/upload-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: imageData })
-            });
-            
-            if (response.ok) {
-                const { url } = await response.json();
+            try {
+                const table = document.querySelector('.card');
+                const canvas = await html2canvas(table);
                 
-                // 显示预览
-                document.getElementById('previewImage').src = url;
-                document.getElementById('imageDownloadLink').href = url;
-                new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
+                // 转换为图片
+                const imageData = canvas.toDataURL('image/png');
+                
+                // 上传到服务器
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+                
+                if (response.ok) {
+                    const { url } = await response.json();
+                    
+                    // 获取完整URL
+                    const fullUrl = window.location.origin + url;
+                    
+                    // 生成Markdown格式的图片链接
+                    const markdownLink = `![VPS Table](${fullUrl})`;
+                    
+                    // 显示预览
+                    document.getElementById('previewImage').src = url;
+                    document.getElementById('imageDownloadLink').href = url;
+                    document.getElementById('markdownLink').value = markdownLink;
+                    
+                    // 显示模态框
+                    new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('生成图片失败: ' + error.message);
+            }
+        }
+
+        // 添加复制Markdown链接功能
+        function copyMarkdownLink() {
+            const markdownInput = document.getElementById('markdownLink');
+            markdownInput.select();
+            
+            try {
+                document.execCommand('copy');
+                // 创建一个临时的提示元素
+                const tooltip = document.createElement('div');
+                tooltip.className = 'position-fixed top-50 start-50 translate-middle bg-dark text-white px-3 py-2 rounded';
+                tooltip.style.zIndex = '9999';
+                tooltip.textContent = '已复制到剪贴板';
+                document.body.appendChild(tooltip);
+                
+                // 2秒后移除提示
+                setTimeout(() => {
+                    document.body.removeChild(tooltip);
+                }, 2000);
+            } catch (err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
             }
         }
 
